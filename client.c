@@ -33,7 +33,7 @@ int main(int argc, char *argv[]){
         case RESP_TEARDOWN:
             break;
         default:
-            error("Undefined state.")
+            perror("Undefined state.");
             break;
     }
 }
