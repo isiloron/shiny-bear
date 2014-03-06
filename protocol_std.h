@@ -2,7 +2,7 @@
 #define PROTOCOL_STD_H
 
 #include <sys/types.h>
-#include <sys/sockets.h>
+#include <sys/socket.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
