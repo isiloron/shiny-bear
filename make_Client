@@ -1,9 +1,9 @@
 CC = gcc
 CFLAGS =-c -Wall
 LDFLAGS =
-SOURCES = server.c server_functions.c
+SOURCES = clinet.c 
 OBJECTS = ${SOURCES: .c = .o}
-EXECUTABLE = server
+EXECUTABLE = Client
 
 all: ${SOURCES} ${EXECUTABLE}
 
