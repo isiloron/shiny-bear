@@ -6,8 +6,8 @@ int main(int argc, char **argv)
     struct sockaddr_in remaddr;/* remote address */
     socklen_t addrlen = sizeof(remaddr);/* length of addresses */
     int recvlen;/* bytes received */
-    int fd;/* our socket */
-    unsigned char buf[BUFSIZE];/* receive buffer */
+    int fd;/* our socket (filedescriptor)*/
+    unsigned char buf[BUFFERSIZE];/* receive buffer */
 
     /* create a UDP socket */
     if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
