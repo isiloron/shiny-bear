@@ -25,4 +25,6 @@ typedef struct rtp_struct {
     char* data;
 } rtp;
 
+rtp* createNewPacket(int flag, int id, int seq, int crc, char* data);
+
 #endif //PROTOCOL_STD_H
