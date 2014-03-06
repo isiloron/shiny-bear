@@ -16,3 +16,7 @@
 *.exe
 *.out
 *.app
+
+make_Server~
+make_Client~
+.gitignore~
