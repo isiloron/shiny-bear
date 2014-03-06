@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <netinet/in.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 #define PORT 5555
 #define BUFFERSIZE 1024
