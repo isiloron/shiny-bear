@@ -218,6 +218,9 @@ int main(int argc, char **argv)
 
                     /*read data from packet*/
                     printf("Received message: %s \n", incoming_packet->data);
+
+                    /*throw away packet, when it has been read*/
+                    free(incoming_packet);
                 }
                 break;
 
