@@ -14,9 +14,10 @@
 #define BUFFERSIZE 1024
 
 //flags
-#define FIN 1 //001
-#define SYN 2 //010
-#define ACK 4 //100
+#define FIN 1 //0001
+#define SYN 2 //0010
+#define ACK 4 //0100
+#define INF 8 //1000
 
 
 typedef struct rtp_struct {
