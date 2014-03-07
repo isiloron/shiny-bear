@@ -3,28 +3,27 @@
 int main(int argc, char **argv)
 {
     int state = CLOSED;
+    fd_set read_fd_set; /*create a set for sockets*/
+    int fd;/* our socket (filedescriptor)*/
     struct sockaddr_in myaddr;/* our address */
     struct sockaddr_in remaddr;/* remote address */
     socklen_t addrlen = sizeof(remaddr);/* length of addresses */
-    int fd;/* our socket (filedescriptor)*/
-    char buffer[BUFFERSIZE];/* Buffer containing the readable data*/
-    void* packet_buffer;/* Buffer containing packets*/
-    int recvlen;
-    int i = 0; /*iteration konstant for tiemouts*/
+    void* serializedSegment = malloc(sizeof(rtp)); /*mem addresses to hold serialized sequences*/
+    struct Buffer* buf;/*fhelp struct for serializing and deserializing*/
+    int returnval; /*for checking returnval on select()*/
 
+    /*udp packet members*/
     int flags = 0;
     int id = 0;
     int seq = 0;
     int crc = 0;
-    char* data = NULL;
-    int longTimeOut;
-    rtp* outgoing_packet = NULL;
-    rtp* incoming_packet = NULL;
-    fd_set read_fd_set; /*create a set for sockets*/
+    char data = 0;
 
+    /*Timeouts*/
+    int longTimeOut = 0;
+    rtp* UDP_packet = NULL;
     struct timeval shortTimeOut;
-
-    int returnval; /*for checking returnval on select()*/
+    int numOfShortTimeOuts = 0; /*iteration konstant for tiemouts*/
 
     while(1)
     {
@@ -32,7 +31,7 @@ int main(int argc, char **argv)
         {
             case CLOSED:
             {
-                /*Close the old socket*/
+                /*Close (if any) old socket*/
                 close(fd);
 
                 /* Try to create and open up a new UDP socket */
@@ -63,13 +62,14 @@ int main(int argc, char **argv)
 
             case LISTEN:
             {
-                    /*Awaiting SYN from client*/
+                    /*wait for SYN from client*/
+
                     longTimeOut = 5;/*number of short timeouts that will correspond to a long timeout*/
                     FD_ZERO(&read_fd_set);/*clear set*/
                     FD_SET(fd,&read_fd_set);/*put the fd in the set*/
 
                     /*the for-loop represents a long time out, and one iteration represent a short time out*/
-                    for(i = 0; i < longTimeOut; i++)
+                    for(numOfShortTimeOuts = 0; numOfShortTimeOuts < longTimeOut; numOfShortTimeOuts++)
                     {
                         /*Set time for short timeouts*/
                         shortTimeOut.tv_sec = 5;
@@ -90,43 +90,57 @@ int main(int argc, char **argv)
 
                     if(returnval == 1)/*we got something to read*/
                     {
-                        /*received packet is stored in packetbuffer (void* packetbuffer)*/
-                        recvlen = recvfrom(fd, packet_buffer, sizeof(rtp), 0, (struct sockaddr *)&remaddr, &addrlen);
+                        /*received serialized segment*/
+                        recvfrom(fd, serializedSegment, sizeof(rtp), 0, (struct sockaddr *)&remaddr, &addrlen);
 
-                        /*create empty packet struct, to received packetbuffer*/
-                        incoming_packet = createNewPacket(flags, id, seq, crc, data);
+                        /*create empty packet struct, to put serializedSegment in*/
+                        UDP_packet = createNewPacket(flags, id, seq, crc, data);
 
-                        /*typecast packetbuffer to packet struct ptr */
-                        incoming_packet = (rtp*)packet_buffer;
+                        /*create helpbuffer for deserializing*/
+                        buf = newBuffer();
+                        buf->data = serializedSegment;
 
-                        /*Make sure packet is ok before "opening" the packet? built into UDP protocol?*/
+                        /*Deserialize the received segment stored in buf into the created UDP packet*/
+                        deserializeRtpStruct(UDP_packet, buf);
+
+                        /*check CRC before opening packet*/
 
                         /*expected packet received */
-                        if (incoming_packet->flags == SYN)
+                        if (UDP_packet->flags == SYN)
                         {
                             printf("Received SYN!\n");
 
+                            free(UDP_packet);
+                            free(buf);
+
                             //create a SYN+ACK packet
-                            outgoing_packet = createNewPacket(flags, id, seq, crc, data);
+                            UDP_packet = createNewPacket(flags, id, seq, crc, data);
 
-                            /*put packet in packet_buffer*/
-                            packet_buffer = (void*)outgoing_packet;
+                            /*create helpbuffer for serializing*/
+                            buf = newBuffer();
 
-                            /*send packet_buffer to client*/
-                            sendto(fd, packet_buffer, sizeof(rtp), 0, (struct sockaddr *)&remaddr, addrlen);
+                            /*Serialize the packet into buf*/
+                            serializeRtpStruct(UDP_packet, buf);
+
+                            /*check crc before sending*/
+
+                            /*send serialized_segment in buf to client*/
+                            sendto(fd, buf, sizeof(rtp), 0, (struct sockaddr *)&remaddr, addrlen);
 
                             /*Move to next state*/
                             state = SYN_RECEIVED;
 
-                            /*delete the created packet*/
-                            free(outgoing_packet);
+
                         }
                         else/*unexpected packet recieved*/
                         {
                             /*throw away packet, keep listening*/
-                            free(incoming_packet);
                             state = LISTEN;
                         }
+
+                        /*delete the created packet/buf */
+                        free(UDP_packet);
+                        free(buf);
                     }
                     else/*Long time out triggered! Reset connection setup*/
                     {
@@ -145,7 +159,7 @@ int main(int argc, char **argv)
                     FD_SET(fd,&read_fd_set);/*put the fd in the set*/
 
                     /*the for-loop represents a long time out, and one iteration represent a short time out*/
-                    for(i = 0; i < longTimeOut; i++)
+                    for(numOfShortTimeOuts = 0; numOfShortTimeOuts < longTimeOut; numOfShortTimeOuts++)
                     {
                         /*Set time for short timeouts*/
                         shortTimeOut.tv_sec = 5;
@@ -166,28 +180,38 @@ int main(int argc, char **argv)
 
                     if(returnval == 1)/*we got something to read*/
                     {
-                        /*received packet is stored in packetbuffer (void* packetbuffer)*/
-                        recvlen = recvfrom(fd, packet_buffer, sizeof(rtp), 0, (struct sockaddr *)&remaddr, &addrlen);
+                        /*received serialize segment */
+                        recvfrom(fd, serializedSegment, sizeof(rtp), 0, (struct sockaddr *)&remaddr, &addrlen);
 
-                        /*create empty packet struct, to received packetbuffer*/
-                        incoming_packet = createNewPacket(flags, id, seq, crc, data);
+                        /*create empty packet struct, to put received serialized segment in*/
+                        UDP_packet = createNewPacket(flags, id, seq, crc, data);
 
-                        /*typecast packetbuffer to packet struct ptr */
-                        incoming_packet = (rtp*)packet_buffer;
+                        /*create helpbuffer for deserializing*/
+                        buf = newBuffer();
+                        buf->data = serializedSegment;
 
-                        /*Make sure packet is ok before "opening" the packet? built into UDP protocol?*/
+                        /*Deserialize the received segment stored in buf into the created UDP packet*/
+                        deserializeRtpStruct(UDP_packet, buf);
+
+                        /*check CRC before opening packet*/
 
                         /*expected packet received */
-                        if (incoming_packet->flags == ACK)
+                        if (UDP_packet->flags == ACK)
                         {
                             printf("Received ACK!\n");
+
                             state = ESTABLISHED;
+
+                            free(UDP_packet);
+                            free(buf);
+
                             break;
                         }
                         /*unexpected packet received, throw away packet, keep listening */
                         else
                         {
-                            free(incoming_packet);
+                            free(UDP_packet);
+                            free(buf);
                             state = LISTEN;
                         }
                     }
@@ -204,23 +228,28 @@ int main(int argc, char **argv)
             {
                 while(1)
                 {
-                    /*Await client to send something, for evA*/
+                    /*Await client to send something, forevA*/
                     select(1, &read_fd_set, NULL, NULL, NULL);
 
-                    /*received packet is stored in packetbuffer (void* packetbuffer)*/
-                    recvlen = recvfrom(fd, packet_buffer, sizeof(rtp), 0, (struct sockaddr *)&remaddr, &addrlen);
+                    /*received serialize segment*/
+                    recvfrom(fd, serializedSegment, sizeof(rtp), 0, (struct sockaddr *)&remaddr, &addrlen);
 
-                    /*create empty packet struct, to received packetbuffer*/
-                    incoming_packet = createNewPacket(flags, id, seq, crc, data);
+                    /*create empty UDP_packet, to put deserialized segment in*/
+                    UDP_packet = createNewPacket(flags, id, seq, crc, data);
 
-                    /*typecast packetbuffer to packet struct ptr */
-                    incoming_packet = (rtp*)packet_buffer;
+                    /*create helpbuffer for deserializing*/
+                    buf = newBuffer();
+                    buf->data = serializedSegment;
 
-                    /*read data from packet*/
-                    printf("Received message: %s \n", incoming_packet->data);
+                    /*Deserialize the received segment stored in buf into the created UDP packet*/
+                    deserializeRtpStruct(UDP_packet, buf);
 
-                    /*throw away packet, when it has been read*/
-                    free(incoming_packet);
+                    /*check CRC before opening packet*/
+
+                    printf("MSG received: %c \n", UDP_packet->data);
+
+                    free(UDP_packet);
+                    free(buf);
                 }
                 break;
 
