@@ -33,11 +33,11 @@ void reserveSpace(struct Buffer* buf, size_t bytes) {
     }
 }
 
-void serializeRtpStruct(rtp* packet, struct Buffer* buf) {
-    serializeInt(packet->crc,buf);
-    serializeInt(packet->flags,buf);
-    serializeInt(packet->seq,buf);
-    serializeChar(packet->data,buf);
+void serializeRtpStruct(rtp* frame, struct Buffer* buf) {
+    serializeInt(frame->flags,buf);
+    serializeInt(frame->seq,buf);
+    serializeChar(frame->data,buf);
+    serializeInt(frame->crc,buf);
 }
 
 void serializeInt(int n, struct Buffer* buf) {
@@ -53,10 +53,10 @@ void serializeChar(char c, struct Buffer* buf) {
 }
 
 void deserializeRtpStruct(rtp* packet, struct Buffer* buf) {
-    deserializeInt(&(packet->crc),buf);
     deserializeInt(&(packet->flags),buf);
     deserializeInt(&(packet->seq),buf);
     deserializeChar(&(packet->data),buf);
+    deserializeInt(&(packet->crc),buf);
 }
 
 void deserializeInt(int* n, struct Buffer* buf) {
@@ -70,6 +70,12 @@ void deserializeChar(char* c, struct Buffer* buf) {
 }
 
 
+//TODO CRC
+void setCrc(int* crc, rtp* frame) {
 
+}
 
+void checkCrc(rtp* frame) {
+
+}
 

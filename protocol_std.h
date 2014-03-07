@@ -36,7 +36,7 @@ struct Buffer {
 rtp* createNewPacket(int flag, int id, int seq, int crc, char data);
 struct Buffer* newBuffer();
 void reserveSpace(struct Buffer* buf, size_t bytes);
-void serializeRtpStruct(rtp* packet, struct Buffer* buf);
+void serializeRtpStruct(rtp* frame, struct Buffer* buf);
 void serializeInt(int n, struct Buffer* buf);
 void serializeChar(char c, struct Buffer* buf);
 void deserializeRtpStruct(rtp* packet, struct Buffer* buf);
