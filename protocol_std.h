@@ -33,7 +33,7 @@ struct Buffer {
     size_t size;
 };
 
-rtp* createNewPacket(int flag, int id, int seq, int crc, char data);
+rtp* newFrame(int flags, int seq, int crc, char data);
 struct Buffer* newBuffer();
 void reserveSpace(struct Buffer* buf, size_t bytes);
 void serializeRtpStruct(rtp* frame, struct Buffer* buf);

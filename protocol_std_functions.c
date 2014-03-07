@@ -1,21 +1,24 @@
 #include "protocol_std.h"
 
-rtp* createNewPacket(int flag, int id, int seq, int crc, char data)
+rtp* newFrame(int flags, int seq, int crc, char data)
 {
-    rtp* UDP_packet = malloc(sizeof(rtp));
-    if(UDP_packet!=NULL)
+    rtp* frame = malloc(sizeof(rtp));
+    if(frame!=NULL)
     {
-        perror("Failed to create UDP packet!\n");
+        perror("Failed to create frame!\n");
         return NULL;
     }
-    else
-        return UDP_packet;
-        //set struct members
+
+    frame->flags = flags;
+    frame->seq = seq;
+    frame->crc = crc;
+    frame->data = data;
+
+    return frame;
 }
 
-
+#define INITIAL_SIZE 32
 struct Buffer* newBuffer() {
-    #define INITIAL_SIZE 32
     struct Buffer* buf = malloc(sizeof(struct Buffer));
 
     buf->data = malloc(INITIAL_SIZE);

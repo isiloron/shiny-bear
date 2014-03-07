@@ -1,24 +1,12 @@
-#include "client.h"
+#include "protocol_std.h"
+#include "client_functions.h"
 
 
 int main(int argc, char *argv[]){
     int sock_fd;
     struct sockaddr_in sockaddr;
-
-    if((sock_fd=socket(AF_INET, SOCK_DGRAM, 0))<0){
-        perror("Could not create socket.");
-        return 0;
-    }
-
-    memset((char*)&sockaddr, 0, sizeof(sockaddr));
-    sockaddr.sin_family = AF_INET;
-    sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    sockaddr.sin_port = htons(PORT);
-
-    if (bind(sock_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) < 0) {
-        perror("Bind failed");
-        return 0;
-    }
+    //rtp* frame;
+    //struct Buffer* buffer;
 
     //sendto(int sock_fd, const void *buffer, size_t length, int flags, const struct sockaddr *dest_addr, socklen_t dest_len);
 
@@ -32,6 +20,9 @@ int main(int argc, char *argv[]){
     int state = CLOSED;
     switch(state){
         case CLOSED:
+            prepareSocket(&sock_fd, &sockaddr);
+            //buffer = newBuffer();
+            //int bytes_sent = sendto(sock_fd,);
             state = SYN_SENT;
             break;
         case SYN_SENT:
