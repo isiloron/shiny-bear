@@ -32,6 +32,7 @@ int main(int argc, char *argv[]){
     int state = CLOSED;
     switch(state){
         case CLOSED:
+            state = SYN_SENT;
             break;
         case SYN_SENT:
             break;
