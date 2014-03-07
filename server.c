@@ -1,5 +1,5 @@
 #include "server.h"
-
+/*UDP_packet is not a reasonable name, cuz it is not a UDP_packet! Rename it to "frame" or something like that:P*/
 int main(int argc, char **argv)
 {
     int state = CLOSED;
@@ -67,35 +67,33 @@ int main(int argc, char **argv)
 
             case LISTEN:
             {
-                    /*wait for SYN from client*/
-                     printf("Listening for SYN...\n");
+                /*wait for SYN from client*/
+                printf("Listening for SYN...\n");
 
-                    longTimeOut = 600;/*number of short timeouts that will correspond to a long timeout*/
-                    FD_ZERO(&read_fd_set);/*clear set*/
-                    FD_SET(fd,&read_fd_set);/*put the fd in the set*/
+                longTimeOut = 600;/*number of short timeouts that will correspond to a long timeout*/
+                FD_ZERO(&read_fd_set);/*clear set*/
+                FD_SET(fd,&read_fd_set);/*put the fd in the set*/
 
-                    /*the for-loop represents a long time out, and one iteration represent a short time out*/
-                    for(numOfShortTimeOuts = 0; numOfShortTimeOuts < longTimeOut; numOfShortTimeOuts++)
+                /*the for-loop represents a long time out, and one iteration represent a short time out*/
+                for(numOfShortTimeOuts = 0; numOfShortTimeOuts < longTimeOut; numOfShortTimeOuts++)
+                {
+                    /*Set time for short timeouts*/
+                    shortTimeOut.tv_sec = 0;
+                    shortTimeOut.tv_usec = 200000;
+
+                    /*wait for something to be read on the filedescriptor in the set*/
+                    returnval = select(1, &read_fd_set, NULL, NULL, &shortTimeOut);
+
+                    if(returnval == -1)/*ERROR*/
                     {
-                        /*Set time for short timeouts*/
-                        shortTimeOut.tv_sec = 0;
-                        shortTimeOut.tv_usec = 200000;
-
-                        /*wait for something to be read on the filedescriptor in the set*/
-                        returnval = select(1, &read_fd_set, NULL, NULL, &shortTimeOut);
-
-                        if(returnval == -1)/*ERROR*/
-                        {
-                            printf("Select failed!\n");
-                            exit(0);
-                        }
-                        else if(returnval == 0){}/*short timeout, no request to connect received*/
-                        else/*there is something to read on the filedescriptor*/
-                            break;
+                        printf("Select failed!\n");
+                        exit(0);
                     }
-
-                    if(returnval == 1)/*we got something to read*/
+                    else if(returnval == 0){}/*short timeout, no request to connect received*/
+                    else/*there is something to read on the filedescriptor*/
                     {
+                        printf("Reading... \n");
+
                         /*received serialized segment*/
                         recvfrom(fd, serializedSegment, sizeof(rtp), 0, (struct sockaddr *)&remaddr, &addrlen);
 
@@ -135,62 +133,56 @@ int main(int argc, char **argv)
 
                             /*Move to next state*/
                             state = SYN_RECEIVED;
-
-
-                        }
+                            break;
+                        }/*End of if expected received*/
                         else/*unexpected packet recieved*/
                         {
-                            printf("unexpected packet! Trow away!\n");
+                            printf("Expecting SYN: Unexpected packet received! Trow away!\n");
                             /*throw away packet, keep listening*/
-                            state = LISTEN;
+
+                            /*delete the created packet/buf */
+                            free(UDP_packet);
+                            free(buf);
                         }
+                    }/*Enf of something to read*/
+                }/*End of for-loop*/
 
-                        /*delete the created packet/buf */
-                        free(UDP_packet);
-                        free(buf);
-                    }
-                    else/*Long time out triggered! Reset connection setup*/
-                    {
-                        printf("Long timeout!\n");
-                        state = CLOSED;
-                    }
-
+                /*Long time out triggered! Reset connection setup*/
+                printf("Long timeout!\n");
+                state = CLOSED;
                 break;
-
             }/*End of case LISTEN*/
 
             case SYN_RECEIVED:
             {
-                    /*Awaiting ACK from client*/
+                /*Awaiting ACK from client*/
 
-                    printf("Listening for ACK...\n");
+                printf("Listening for ACK...\n");
 
-                    longTimeOut = 600;/*number of short timeouts that will correspond to a long timeout*/
-                    FD_ZERO(&read_fd_set);/*clear set*/
-                    FD_SET(fd,&read_fd_set);/*put the fd in the set*/
+                longTimeOut = 600;/*number of short timeouts that will correspond to a long timeout*/
+                FD_ZERO(&read_fd_set);/*clear set*/
+                FD_SET(fd,&read_fd_set);/*put the fd in the set*/
 
-                    /*the for-loop represents a long time out, and one iteration represent a short time out*/
-                    for(numOfShortTimeOuts = 0; numOfShortTimeOuts < longTimeOut; numOfShortTimeOuts++)
+                /*the for-loop represents a long time out, and one iteration represent a short time out*/
+                for(numOfShortTimeOuts = 0; numOfShortTimeOuts < longTimeOut; numOfShortTimeOuts++)
+                {
+                    /*Set time for short timeouts*/
+                    shortTimeOut.tv_sec = 0;
+                    shortTimeOut.tv_usec = 200000;
+
+                    /*wait for something to be read on the filedescriptor in the set*/
+                    returnval = select(1, &read_fd_set, NULL, NULL, &shortTimeOut);
+
+                    if(returnval == -1)/*ERROR*/
                     {
-                        /*Set time for short timeouts*/
-                        shortTimeOut.tv_sec = 0;
-                        shortTimeOut.tv_usec = 200000;
-
-                        /*wait for something to be read on the filedescriptor in the set*/
-                        returnval = select(1, &read_fd_set, NULL, NULL, &shortTimeOut);
-
-                        if(returnval == -1)/*ERROR*/
-                        {
-                            perror("Select failed!\n");
-                            exit(0);
-                        }
-                        else if(returnval == 0){}/*short timeout, no request to connect received*/
-                        else/*there is something to read on the filedescriptor*/
-                            break;
+                        perror("Select failed!\n");
+                        exit(0);
                     }
-
-                    if(returnval == 1)/*we got something to read*/
+                    else if(returnval == 0){}/*short timeout, no request to connect received*/
+                    else/*we got something to read*/
                     {
+                        printf("Reading... \n");
+
                         /*received serialize segment */
                         recvfrom(fd, serializedSegment, sizeof(rtp), 0, (struct sockaddr *)&remaddr, &addrlen);
 
@@ -221,17 +213,17 @@ int main(int argc, char **argv)
                         /*unexpected packet received, throw away packet, keep listening */
                         else
                         {
+                            printf("Expecting ACK: Unexpected packet received! Trow away!\n");
                             free(UDP_packet);
                             free(buf);
-                            state = LISTEN;
                         }
-                    }
-                    else/*Long time out triggered! Reset connection setup*/
-                    {
-                        printf("Long timeout!\n");
-                        state = CLOSED;
-                    }
+                    }/*End of something to read*/
+                }/*End of for-loop*/
 
+                /*Long time out triggered! Reset connection setup*/
+
+                printf("Long timeout!\n");
+                state = CLOSED;
                 break;
 
             }/*End of CASE SYN_RECEIVED*/
