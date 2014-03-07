@@ -37,12 +37,14 @@ int main(int argc, char **argv)
                 /* Try to create and open up a new UDP socket */
                 if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
                 {
-                    perror("Could not create UDP socket!\n");
+                    printf("Could not create UDP socket!\n");
                     exit(0);
                 }
                 /* Try to bind the socket to any valid IP address*/
                 else
                 {
+                    printf("Successfully created a Socket!\n");
+
                     memset((char *)&myaddr, 0, sizeof(myaddr));
                     myaddr.sin_family = AF_INET;
                     myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -50,11 +52,14 @@ int main(int argc, char **argv)
 
                     if(bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr)) < 0)
                     {
-                        perror("Could not bind the socket!\n");
+                        printf("Could not bind the socket!\n");
                         exit(0);
                     }
                     else/*created and bound a socket successfully, go to next state*/
+                    {
+                        printf("Successfully bound a Socket!\n");
                         state = LISTEN;
+                    }
                 }
                 break;
 
@@ -63,8 +68,9 @@ int main(int argc, char **argv)
             case LISTEN:
             {
                     /*wait for SYN from client*/
+                     printf("Listening for SYN...\n");
 
-                    longTimeOut = 5;/*number of short timeouts that will correspond to a long timeout*/
+                    longTimeOut = 600;/*number of short timeouts that will correspond to a long timeout*/
                     FD_ZERO(&read_fd_set);/*clear set*/
                     FD_SET(fd,&read_fd_set);/*put the fd in the set*/
 
@@ -72,15 +78,15 @@ int main(int argc, char **argv)
                     for(numOfShortTimeOuts = 0; numOfShortTimeOuts < longTimeOut; numOfShortTimeOuts++)
                     {
                         /*Set time for short timeouts*/
-                        shortTimeOut.tv_sec = 5;
-                        shortTimeOut.tv_usec = 0;
+                        shortTimeOut.tv_sec = 0;
+                        shortTimeOut.tv_usec = 200000;
 
                         /*wait for something to be read on the filedescriptor in the set*/
                         returnval = select(1, &read_fd_set, NULL, NULL, &shortTimeOut);
 
                         if(returnval == -1)/*ERROR*/
                         {
-                            perror("Select failed!\n");
+                            printf("Select failed!\n");
                             exit(0);
                         }
                         else if(returnval == 0){}/*short timeout, no request to connect received*/
@@ -134,6 +140,7 @@ int main(int argc, char **argv)
                         }
                         else/*unexpected packet recieved*/
                         {
+                            printf("unexpected packet! Trow away!\n");
                             /*throw away packet, keep listening*/
                             state = LISTEN;
                         }
@@ -144,6 +151,7 @@ int main(int argc, char **argv)
                     }
                     else/*Long time out triggered! Reset connection setup*/
                     {
+                        printf("Long timeout!\n");
                         state = CLOSED;
                     }
 
@@ -154,7 +162,10 @@ int main(int argc, char **argv)
             case SYN_RECEIVED:
             {
                     /*Awaiting ACK from client*/
-                    longTimeOut = 5;/*number of short timeouts that will correspond to a long timeout*/
+
+                    printf("Listening for ACK...\n");
+
+                    longTimeOut = 600;/*number of short timeouts that will correspond to a long timeout*/
                     FD_ZERO(&read_fd_set);/*clear set*/
                     FD_SET(fd,&read_fd_set);/*put the fd in the set*/
 
@@ -162,8 +173,8 @@ int main(int argc, char **argv)
                     for(numOfShortTimeOuts = 0; numOfShortTimeOuts < longTimeOut; numOfShortTimeOuts++)
                     {
                         /*Set time for short timeouts*/
-                        shortTimeOut.tv_sec = 5;
-                        shortTimeOut.tv_usec = 0;
+                        shortTimeOut.tv_sec = 0;
+                        shortTimeOut.tv_usec = 200000;
 
                         /*wait for something to be read on the filedescriptor in the set*/
                         returnval = select(1, &read_fd_set, NULL, NULL, &shortTimeOut);
@@ -217,6 +228,7 @@ int main(int argc, char **argv)
                     }
                     else/*Long time out triggered! Reset connection setup*/
                     {
+                        printf("Long timeout!\n");
                         state = CLOSED;
                     }
 
@@ -226,6 +238,8 @@ int main(int argc, char **argv)
 
             case ESTABLISHED:
             {
+                printf("Connection astablished!\n");
+
                 while(1)
                 {
                     /*Await client to send something, forevA*/
