@@ -10,95 +10,127 @@ int main(int argc, char **argv)
     char buffer[BUFFERSIZE];/* Buffer containing the readable data*/
     void* packet_buffer;/* Buffer containing packets*/
     int recvlen;
+    int i = 0; /*iteration konstant for tiemouts*/
 
-    int flag = 0;
+    int flags = 0;
     int id = 0;
     int seq = 0;
     int crc = 0;
     char* data = NULL;
-    rtp* packetPtr = NULL;
+    int longTimeOut;
+    rtp* outgoing_packet = NULL;
     rtp* incoming_packet = NULL;
     fd_set read_fd_set; /*create a set for sockets*/
 
     struct timeval shortTimeOut;
-    struct timeval longTimeOut;
+
     int returnval; /*for checking returnval on select()*/
 
     while(1)
     {
         switch(state)
         {
-            /*Reset time outs*/
-            shortTimeOut.tv_sec = 5;
-            shortTimeOut.tv_usec = 0;
-            longTimeOut.tv_sec = 20;
-            longTimeOut.tv_usec = 0;
-
             case CLOSED:
             {
-                /* Try to create and open up a UDP socket */
+                /*Close the old socket*/
+                close(fd);
+
+                /* Try to create and open up a new UDP socket */
                 if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
                 {
                     perror("Could not create UDP socket!\n");
-                    return 0;
+                    exit(0);
                 }
-
-                /* Try to bind the socket to any valid IP address and the specified port */
-                memset((char *)&myaddr, 0, sizeof(myaddr));
-                myaddr.sin_family = AF_INET;
-                myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-                myaddr.sin_port = htons(PORT);
-
-                if(bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr)) < 0)
+                /* Try to bind the socket to any valid IP address*/
+                else
                 {
-                    perror("Could not bind the socket!\n");
-                    return 0;
-                }
+                    memset((char *)&myaddr, 0, sizeof(myaddr));
+                    myaddr.sin_family = AF_INET;
+                    myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+                    myaddr.sin_port = htons(PORT);
 
-                state = LISTEN;
+                    if(bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr)) < 0)
+                    {
+                        perror("Could not bind the socket!\n");
+                        exit(0);
+                    }
+                    else/*created and bound a socket successfully, go to next state*/
+                        state = LISTEN;
+                }
                 break;
 
             }/*End of case CLOSED*/
 
             case LISTEN:
             {
-                    /*Awaiting SYN from client with select, TODO! MAKE FORLOOP TO SIMULATE LONG TIMEOUT FOR ALL STATES*/
-
+                    /*Awaiting SYN from client*/
+                    longTimeOut = 5;/*number of short timeouts that will correspond to a long timeout*/
                     FD_ZERO(&read_fd_set);/*clear set*/
                     FD_SET(fd,&read_fd_set);/*put the fd in the set*/
 
-                    returnval = select(1, &read_fd_set, NULL, NULL, &shortTimeOut); /*wait for something to be read on the fd in the set*/
+                    /*the for-loop represents a long time out, and one iteration represent a short time out*/
+                    for(i = 0; i < longTimeOut; i++)
+                    {
+                        /*Set time for short timeouts*/
+                        shortTimeOut.tv_sec = 5;
+                        shortTimeOut.tv_usec = 0;
 
-                    if(returnval == 0)/*short time out, noone wants to connect*/
-                        break;
-                    else if(returnval == -1)/*ERROR*/
-                    {
-                        perror("Select() failed!\n");
-                        exit(0);
+                        /*wait for something to be read on the filedescriptor in the set*/
+                        returnval = select(1, &read_fd_set, NULL, NULL, &shortTimeOut);
+
+                        if(returnval == -1)/*ERROR*/
+                        {
+                            perror("Select failed!\n");
+                            exit(0);
+                        }
+                        else if(returnval == 0){}/*short timeout, no request to connect received*/
+                        else/*there is something to read on the filedescriptor*/
+                            break;
                     }
-                    else/*we got something to read*/
+
+                    if(returnval == 1)/*we got something to read*/
                     {
-                        /*store received packet in packetbuffer*/
+                        /*received packet is stored in packetbuffer (void* packetbuffer)*/
                         recvlen = recvfrom(fd, packet_buffer, sizeof(rtp), 0, (struct sockaddr *)&remaddr, &addrlen);
 
-                        /*Bytecount? */
-                        if(recvlen > 0)
+                        /*create empty packet struct, to received packetbuffer*/
+                        incoming_packet = createNewPacket(flags, id, seq, crc, data);
+
+                        /*typecast packetbuffer to packet struct ptr */
+                        incoming_packet = (rtp*)packet_buffer;
+
+                        /*Make sure packet is ok before "opening" the packet? built into UDP protocol?*/
+
+                        /*expected packet received */
+                        if (incoming_packet->flags == SYN)
                         {
-                            incoming_packet = (rtp*)packet_buffer; /*typecast void* to struct* */
+                            printf("Received SYN!\n");
 
-                            /*Is this SYN? */
-                            if (incoming_packet->flags == SYN)
-                            {
-                                printf("Received SYN!\n");
+                            //create a SYN+ACK packet
+                            outgoing_packet = createNewPacket(flags, id, seq, crc, data);
 
-                                //create a packet to send
-                                packetPtr = createNewPacket(flag, id, seq, crc, data);
+                            /*put packet in packet_buffer*/
+                            packet_buffer = (void*)outgoing_packet;
 
-                                sendto(fd, packet_buffer, sizeof(rtp), 0, (struct sockaddr *)&remaddr, addrlen);
-                                state = SYN_RECEIVED;
-                                free(packetPtr);
-                            }
+                            /*send packet_buffer to client*/
+                            sendto(fd, packet_buffer, sizeof(rtp), 0, (struct sockaddr *)&remaddr, addrlen);
+
+                            /*Move to next state*/
+                            state = SYN_RECEIVED;
+
+                            /*delete the created packet*/
+                            free(outgoing_packet);
                         }
+                        else/*unexpected packet recieved*/
+                        {
+                            /*throw away packet, keep listening*/
+                            free(incoming_packet);
+                            state = LISTEN;
+                        }
+                    }
+                    else/*Long time out triggered! Reset connection setup*/
+                    {
+                        state = CLOSED;
                     }
 
                 break;
@@ -107,37 +139,61 @@ int main(int argc, char **argv)
 
             case SYN_RECEIVED:
             {
-                    /*Awaiting ACK from client with select*/
-
+                    /*Awaiting ACK from client*/
+                    longTimeOut = 5;/*number of short timeouts that will correspond to a long timeout*/
                     FD_ZERO(&read_fd_set);/*clear set*/
                     FD_SET(fd,&read_fd_set);/*put the fd in the set*/
 
-                    returnval = select(1, &read_fd_set, NULL, NULL, &shortTimeOut); /*wait for something to be read on the fd in the set*/
+                    /*the for-loop represents a long time out, and one iteration represent a short time out*/
+                    for(i = 0; i < longTimeOut; i++)
+                    {
+                        /*Set time for short timeouts*/
+                        shortTimeOut.tv_sec = 5;
+                        shortTimeOut.tv_usec = 0;
 
-                    if(returnval == 0)/*short time out, ACK has been lost!*/
-                        break;
-                    else if(returnval == -1)/*ERROR*/
-                    {
-                        perror("Select() failed!\n");
-                        exit(0);
+                        /*wait for something to be read on the filedescriptor in the set*/
+                        returnval = select(1, &read_fd_set, NULL, NULL, &shortTimeOut);
+
+                        if(returnval == -1)/*ERROR*/
+                        {
+                            perror("Select failed!\n");
+                            exit(0);
+                        }
+                        else if(returnval == 0){}/*short timeout, no request to connect received*/
+                        else/*there is something to read on the filedescriptor*/
+                            break;
                     }
-                    else/*we got something to read*/
+
+                    if(returnval == 1)/*we got something to read*/
                     {
+                        /*received packet is stored in packetbuffer (void* packetbuffer)*/
                         recvlen = recvfrom(fd, packet_buffer, sizeof(rtp), 0, (struct sockaddr *)&remaddr, &addrlen);
 
-                        /*Have we received any bytes? */
-                        if(recvlen > 0)
-                        {
-                            incoming_packet = (rtp*)packet_buffer; /*typecast void* to struct* */
+                        /*create empty packet struct, to received packetbuffer*/
+                        incoming_packet = createNewPacket(flags, id, seq, crc, data);
 
-                            /*Is this ACK?*/
-                            if (incoming_packet->flags == ACK)
-                            {
-                                printf("Received ACK!\n");
-                                state = ESTABLISHED;
-                                break;
-                            }
+                        /*typecast packetbuffer to packet struct ptr */
+                        incoming_packet = (rtp*)packet_buffer;
+
+                        /*Make sure packet is ok before "opening" the packet? built into UDP protocol?*/
+
+                        /*expected packet received */
+                        if (incoming_packet->flags == ACK)
+                        {
+                            printf("Received ACK!\n");
+                            state = ESTABLISHED;
+                            break;
                         }
+                        /*unexpected packet received, throw away packet, keep listening */
+                        else
+                        {
+                            free(incoming_packet);
+                            state = LISTEN;
+                        }
+                    }
+                    else/*Long time out triggered! Reset connection setup*/
+                    {
+                        state = CLOSED;
                     }
 
                 break;
@@ -146,7 +202,23 @@ int main(int argc, char **argv)
 
             case ESTABLISHED:
             {
-                /*Await client to send frames*/
+                while(1)
+                {
+                    /*Await client to send something, for evA*/
+                    select(1, &read_fd_set, NULL, NULL, NULL);
+
+                    /*received packet is stored in packetbuffer (void* packetbuffer)*/
+                    recvlen = recvfrom(fd, packet_buffer, sizeof(rtp), 0, (struct sockaddr *)&remaddr, &addrlen);
+
+                    /*create empty packet struct, to received packetbuffer*/
+                    incoming_packet = createNewPacket(flags, id, seq, crc, data);
+
+                    /*typecast packetbuffer to packet struct ptr */
+                    incoming_packet = (rtp*)packet_buffer;
+
+                    /*read data from packet*/
+                    printf("Received message: %s \n", incoming_packet->data);
+                }
                 break;
 
             }/*End of CASE ESTABLISHED*/
