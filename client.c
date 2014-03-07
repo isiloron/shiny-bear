@@ -15,11 +15,12 @@ int main(int argc, char *argv[]){
     sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     sockaddr.sin_port = htons(PORT);
 
+    if (bind(sock_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) < 0) {
+        perror("Bind failed");
+        return 0;
+    }
 
-
-
-
-    int state;
+    //sendto(int sock_fd, const void *buffer, size_t length, int flags, const struct sockaddr *dest_addr, socklen_t dest_len);
 
     #define CLOSED 0
     #define SYN_SENT 1
@@ -28,6 +29,7 @@ int main(int argc, char *argv[]){
     #define INIT_TEARDOWN 4
     #define RESP_TEARDOWN 5
 
+    int state = CLOSED;
     switch(state){
         case CLOSED:
             break;
@@ -45,5 +47,6 @@ int main(int argc, char *argv[]){
             perror("Undefined state.");
             break;
     }
+    return 0;
 }
 

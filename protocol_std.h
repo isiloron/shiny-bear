@@ -11,7 +11,7 @@
 #include <unistd.h>
 
 #define PORT 5555
-#define BUFFERSIZE 1024
+#define MAXMSG 254 //char (-1 for '\0')
 
 //flags
 #define FIN 1 //0001
@@ -22,12 +22,26 @@
 
 typedef struct rtp_struct {
     int flags;
-    int id; //connection identifier (client socket id)
     int seq; //sequence number (frame number)
     int crc; //crc error check code
-    char* data;
+    char data; //one character at a time, if flag is INF then the char value is the number of characters in the complete message.
 } rtp;
 
-rtp* createNewPacket(int flag, int id, int seq, int crc, char* data);
+struct Buffer {
+    void* data;
+    int next;
+    size_t size;
+};
+
+rtp* createNewPacket(int flag, int id, int seq, int crc, char data);
+struct Buffer* newBuffer();
+void reserveSpace(struct Buffer* buf, size_t bytes);
+void serializeRtpStruct(rtp* packet, struct Buffer* buf);
+void serializeInt(int n, struct Buffer* buf);
+void serializeChar(char c, struct Buffer* buf);
+void deserializeRtpStruct(rtp* packet, struct Buffer* buf);
+void deserializeInt(int* n, struct Buffer* buf);
+void deserializeChar(char* c, struct Buffer* buf);
+
 
 #endif //PROTOCOL_STD_H
