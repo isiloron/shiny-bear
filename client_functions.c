@@ -1,5 +1,5 @@
 #include "protocol_std.h"
-#include "client_functions.h"
+#include "client.h"
 
 void prepareSocket(int* sock_fd, struct sockaddr_in* sockaddr) {
     printf("Preparing socket... ");

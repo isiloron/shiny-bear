@@ -1,5 +1,5 @@
 #include "protocol_std.h"
-#include "client_functions.h"
+#include "client.h"
 
 
 int main(int argc, char *argv[]){
