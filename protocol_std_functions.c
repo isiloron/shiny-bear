@@ -36,7 +36,7 @@ void reserveSpace(struct Buffer* buf, size_t bytes) {
     }
 }
 
-void serializeRtpStruct(rtp* frame, struct Buffer* buf) {
+void serializeFrame(rtp* frame, struct Buffer* buf) {
     serializeInt(frame->flags,buf);
     serializeInt(frame->seq,buf);
     serializeChar(frame->data,buf);
@@ -55,7 +55,7 @@ void serializeChar(char c, struct Buffer* buf) {
     buf->next += sizeof(char);
 }
 
-void deserializeRtpStruct(rtp* packet, struct Buffer* buf) {
+void deserializeFrame(rtp* packet, struct Buffer* buf) {
     deserializeInt(&(packet->flags),buf);
     deserializeInt(&(packet->seq),buf);
     deserializeChar(&(packet->data),buf);

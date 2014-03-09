@@ -1,14 +1,26 @@
 #include "protocol_std.h"
 #include "client.h"
 
-
 int main(int argc, char *argv[]){
-    int sock_fd;
-    struct sockaddr_in sockaddr;
-    //rtp* frame;
-    //struct Buffer* buffer;
+    int sfd;
+    struct sockaddr_in myAddr, servAddr;
+    rtp* sendFrame/*, recieveFrame*/;
+    struct Buffer* buffer;
+    //int winStartSeq = 0;
+    //int winEndSeq = 0;
+    //int bytesSent = 0;
+    char hostName[hostNameLength];
 
-    //sendto(int sock_fd, const void *buffer, size_t length, int flags, const struct sockaddr *dest_addr, socklen_t dest_len);
+    if(argv[1] == NULL){
+        perror("Usage: client [host name]");
+        exit(EXIT_FAILURE);
+    }
+    else {
+        strncpy(hostName, argv[1], hostNameLength);
+        hostName[hostNameLength - 1] = '\0';
+    }
+
+    prepareHostAddr(&servAddr, hostName, PORT);
 
     #define CLOSED 0
     #define SYN_SENT 1
@@ -20,12 +32,15 @@ int main(int argc, char *argv[]){
     int state = CLOSED;
     switch(state){
         case CLOSED:
-            prepareSocket(&sock_fd, &sockaddr);
-            //buffer = newBuffer();
-            //int bytes_sent = sendto(sock_fd,);
+            prepareSocket(&sfd, &myAddr);
+            buffer = newBuffer();
+            sendFrame = newFrame(SYN,0,0,0);
+            serializeFrame(sendFrame, buffer);
+            /*bytesSent =*/ sendto(sfd, buffer, sizeof(*buffer), 0, (struct sockaddr*)&servAddr, sizeof(servAddr));
             state = SYN_SENT;
             break;
         case SYN_SENT:
+            while(1);
             break;
         case PRECAUTION:
             break;

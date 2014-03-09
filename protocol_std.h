@@ -9,9 +9,12 @@
 #include <netinet/in.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <netdb.h>
 
 #define PORT 5555
 #define MAXMSG 254 //char (-1 for '\0')
+#define MAXSEQ 1024
+#define WINDSIZE 8
 
 //flags
 #define FIN 1 //0001
@@ -36,10 +39,10 @@ struct Buffer {
 rtp* newFrame(int flags, int seq, int crc, char data);
 struct Buffer* newBuffer();
 void reserveSpace(struct Buffer* buf, size_t bytes);
-void serializeRtpStruct(rtp* frame, struct Buffer* buf);
+void serializeFrame(rtp* frame, struct Buffer* buf);
 void serializeInt(int n, struct Buffer* buf);
 void serializeChar(char c, struct Buffer* buf);
-void deserializeRtpStruct(rtp* packet, struct Buffer* buf);
+void deserializeFrame(rtp* packet, struct Buffer* buf);
 void deserializeInt(int* n, struct Buffer* buf);
 void deserializeChar(char* c, struct Buffer* buf);
 
