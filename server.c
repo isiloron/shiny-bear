@@ -33,7 +33,7 @@ int main(int argc, char **argv)
 
             case LISTEN:
             {
-                printf("Listening for SYN...\n");
+                printf("Awaiting SYN...\n");
 
                 /*the for-loop represents a long time out, and one iteration represent a short time out*/
                 for(numOfshortTimeouts=0; numOfshortTimeouts<longTimeOut; numOfshortTimeouts++)
@@ -53,8 +53,6 @@ int main(int argc, char **argv)
                     else if(returnval == 0){}/*short timeout, no request to connect received*/
                     else/*there is something to read on the filedescriptor*/
                     {
-                        printf("Reading something... \n");
-
                         frame = receiveFrame(fd, &remaddr);
 
                         if (frame->flags == SYN)/*expected frame received */
@@ -78,7 +76,7 @@ int main(int argc, char **argv)
                         }/*End of expected frame received*/
                         else/*unexpected packet recieved*/
                         {
-                            printf("Expecting SYN: Unexpected frame received. Throw away!\n");
+                            printf("Unexpected frame received. Throw away!\n");
                             /*throw away frame, keep listening*/
 
                             /*delete the created frame */
@@ -100,7 +98,7 @@ int main(int argc, char **argv)
 
             case SYN_RECEIVED:
             {
-                printf("Listening for ACK...\n");
+                printf("Awaiting ACK...\n");
 
                 /*the for-loop represents a long time out, and one iteration represent a short time out*/
                 for(numOfshortTimeouts=0; numOfshortTimeouts<longTimeOut; numOfshortTimeouts++)
@@ -121,9 +119,7 @@ int main(int argc, char **argv)
                     else if(returnval == 0){}/*short timeout, no request to connect received*/
                     else/*we got something to read*/
                     {
-                        printf("Reading... \n");
-
-                        frame = receiveFrame(fd, remaddr);
+                        frame = receiveFrame(fd, &remaddr);
 
                         /*expected packet received */
                         if (frame->flags == ACK)
@@ -138,32 +134,41 @@ int main(int argc, char **argv)
                             break;
                         }
                         /*unexpected packet received, throw away packet, keep listening */
+                        else if(frame->flags == SYN)
+                        {
+                                frame = newFrame(SYN+ACK, 0, 0, 0);//create a SYN+ACK frame
+                                sendFrame(fd, frame, remaddr); /*resend SYN+ACK*/
+                                printf("Resent SYN + ACK\n");
+                                free(frame);
+                        }
                         else
                         {
-                            printf("Expecting ACK: Unexpected packet received! Trow away!\n");
+                            printf("Unexpected packet received! Trow away!\n");
                             /*delete the created frame */
                             free(frame);
                         }
                     }/*End of something to read*/
                 }/*End of for-loop*/
 
-                printf("Long timeout! Reset connection setup\n");
-                state = CLOSED;
-
+                if(state != ESTABLISHED)
+                {
+                    printf("Long timeout! Reset connection setup\n");
+                    state = CLOSED;
+                }
                 break;
 
             }/*End of CASE SYN_RECEIVED*/
 
             case ESTABLISHED:
             {
-                printf("Connection astablished!\n");
+                printf("Connection established!\n");
 
                 while(1)
                 {
                     /*Await client to send something, forevA*/
                     select(1, &read_fd_set, NULL, NULL, NULL);
 
-                    frame = receiveFrame(fd, remaddr);
+                    frame = receiveFrame(fd, &remaddr);
 
                     printf("Incoming msg: %c \n", frame->data);
 
