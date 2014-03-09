@@ -30,29 +30,32 @@ int main(int argc, char *argv[]){
     #define RESP_TEARDOWN 5
 
     int state = CLOSED;
-    switch(state){
-        case CLOSED:
-            prepareSocket(&sfd, &myAddr);
-            buffer = newBuffer();
-            sendFrame = newFrame(SYN,0,0,0);
-            serializeFrame(sendFrame, buffer);
-            /*bytesSent =*/ sendto(sfd, buffer, sizeof(*buffer), 0, (struct sockaddr*)&servAddr, sizeof(servAddr));
-            state = SYN_SENT;
-            break;
-        case SYN_SENT:
-            while(1);
-            break;
-        case PRECAUTION:
-            break;
-        case ESTABLISHED:
-            break;
-        case INIT_TEARDOWN:
-            break;
-        case RESP_TEARDOWN:
-            break;
-        default:
-            perror("Undefined state.");
-            break;
+    while(1){
+        switch(state){
+            case CLOSED:
+                prepareSocket(&sfd, &myAddr);
+                buffer = newBuffer();
+                sendFrame = newFrame(SYN,0,0,0);
+                serializeFrame(sendFrame, buffer);
+                /*bytesSent =*/ sendto(sfd, buffer->data, sizeof(*buffer->data), 0, (struct sockaddr*)&servAddr, sizeof(servAddr));
+                printf("Syn sent!\n");
+                state = SYN_SENT;
+                break;
+            case SYN_SENT:
+                while(1);
+                break;
+            case PRECAUTION:
+                break;
+            case ESTABLISHED:
+                break;
+            case INIT_TEARDOWN:
+                break;
+            case RESP_TEARDOWN:
+                break;
+            default:
+                perror("Undefined state.");
+                break;
+        }
     }
     return 0;
 }
