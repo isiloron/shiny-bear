@@ -36,6 +36,7 @@ struct Buffer {
     size_t size;
 };
 
+void prepareSocket(int* sock_fd, struct sockaddr_in* sockaddr);
 rtp* newFrame(int flags, int seq, int crc, char data);
 struct Buffer* newBuffer();
 void reserveSpace(struct Buffer* buf, size_t bytes);
