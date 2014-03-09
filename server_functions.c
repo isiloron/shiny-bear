@@ -24,7 +24,7 @@ int bind_UDP_Socket(struct sockaddr_in* myaddr, int fd)
     myaddr->sin_addr.s_addr = htonl(INADDR_ANY);
     myaddr->sin_port = htons(PORT);/*assign port*/
 
-    if(bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr)) < 0)
+    if(bind(fd, (struct sockaddr *)myaddr, sizeof(*myaddr)) < 0)
     {
         printf("Could not bind the socket!\n");
         exit(0);

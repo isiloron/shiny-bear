@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 
                         buf->data = serializedSegment;/*put serialized segment in buffer*/
 
-                        deserializeRtpStruct(frame, buf);/*Deserialize the received segment stored in buf into the created frame*/
+                        deserializeFrame(frame, buf);/*Deserialize the received segment stored in buf into the created frame*/
 
                         /*check CRC before reading frame*/
 
@@ -88,7 +88,7 @@ int main(int argc, char **argv)
 
                             buf = newBuffer();/*create helpbuffer for serializing*/
 
-                            serializeRtpStruct(frame, buf);/*Serialize the frame into buf*/
+                            serializeFrame(frame, buf);/*Serialize the frame into buf*/
 
                             /*check crc before sending*/
 
@@ -156,7 +156,7 @@ int main(int argc, char **argv)
                         buf->data = serializedSegment;
 
                         /*Deserialize the received segment stored in buf into the created UDP packet*/
-                        deserializeRtpStruct(frame, buf);
+                        deserializeFrame(frame, buf);
 
                         /*check CRC before opening packet*/
 
@@ -209,7 +209,7 @@ int main(int argc, char **argv)
                     buf->data = serializedSegment;
 
                     /*Deserialize the received segment stored in buf into the created frame*/
-                    deserializeRtpStruct(frame, buf);
+                    deserializeFrame(frame, buf);
 
                     /*check CRC before opening frame*/
 
