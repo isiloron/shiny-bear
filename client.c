@@ -4,8 +4,7 @@
 int main(int argc, char *argv[]){
     int sfd;
     struct sockaddr_in myAddr, servAddr;
-    rtp* sendFrame/*, recieveFrame*/;
-    struct Buffer* buffer;
+    rtp* frameToSend/*, recieveFrame*/;
     //int winStartSeq = 0;
     //int winEndSeq = 0;
     //int bytesSent = 0;
@@ -34,11 +33,10 @@ int main(int argc, char *argv[]){
         switch(state){
             case CLOSED:
                 prepareSocket(&sfd, &myAddr);
-                buffer = newBuffer();
-                sendFrame = newFrame(SYN,0,0,0);
-                serializeFrame(sendFrame, buffer);
-                /*bytesSent =*/ sendto(sfd, buffer->data, sizeof(*buffer->data), 0, (struct sockaddr*)&servAddr, sizeof(servAddr));
+                frameToSend = newFrame(SYN,0,0,0);
+                /*bytesSent =*/ sendFrame(sfd, frameToSend, servAddr);
                 printf("Syn sent!\n");
+                free(frameToSend);
                 state = SYN_SENT;
                 break;
             case SYN_SENT:
