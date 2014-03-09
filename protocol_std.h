@@ -22,6 +22,8 @@
 #define ACK 4 //0100
 #define INF 8 //1000
 
+/*Timeouts*/
+#define longTimeOut 600
 
 typedef struct rtp_struct {
     int flags;
@@ -48,6 +50,7 @@ void deserializeInt(int* n, struct Buffer* buf);
 void deserializeChar(char* c, struct Buffer* buf);
 int sendFrame(int socket, rtp* frame, struct sockaddr_in dest);
 rtp* receiveFrame(int socket, struct sockaddr_in clientAddr);
+void resetShortTimeout(struct timeval* shortTimeout);
 
 
 #endif //PROTOCOL_STD_H

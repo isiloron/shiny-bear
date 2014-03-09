@@ -9,11 +9,11 @@ int main(int argc, char **argv)
     struct sockaddr_in remaddr;/* remote address */
     int returnval; /*for checking returnval on select()*/
 
-    /*Timeouts*/
-    int longTimeOut = 0;
-    rtp* frame = NULL;
     struct timeval shortTimeout;
     int numOfshortTimeouts = 0; /*iteration konstant for tiemouts*/
+
+    rtp* frame = NULL;
+
 
     while(1)/*for now press Ctr + 'c' to exit program*/
     {
@@ -23,9 +23,9 @@ int main(int argc, char **argv)
             {
                 close(fd);/*Close (if any) old socket*/
 
-                fd = createSocket();/* Try to create and open up a new UDP socket */
+                prepareSocket(&fd, &myaddr);/*create and bind socket*/
 
-                state = bind_UDP_Socket(&myaddr, fd);/* Try to bind the socket to any valid IP address*/
+                state = LISTEN;
 
                 break;
 
@@ -35,10 +35,8 @@ int main(int argc, char **argv)
             {
                 printf("Listening for SYN...\n");
 
-                longTimeOut = 600;/*number of short timeouts that will correspond to one long timeout*/
-
                 /*the for-loop represents a long time out, and one iteration represent a short time out*/
-                for(numOfshortTimeouts = 0; numOfshortTimeouts < longTimeOut; numOfshortTimeouts ++)
+                for(numOfshortTimeouts=0; numOfshortTimeouts<longTimeOut; numOfshortTimeouts++)
                 {
                     resetShortTimeout(&shortTimeout);
 
@@ -104,14 +102,10 @@ int main(int argc, char **argv)
             {
                 printf("Listening for ACK...\n");
 
-                longTimeOut = 600;/*number of short timeouts that will correspond to a long timeout*/
-
                 /*the for-loop represents a long time out, and one iteration represent a short time out*/
-                for(numOfshortTimeouts = 0; numOfshortTimeouts < longTimeOut; numOfshortTimeouts++)
+                for(numOfshortTimeouts=0; numOfshortTimeouts<longTimeOut; numOfshortTimeouts++)
                 {
-                    /*Set time for short timeouts*/
-                    shortTimeout.tv_sec = 0;
-                    shortTimeout.tv_usec = 200000;
+                    resetShortTimeout(&shortTimeout);
 
                     FD_ZERO(&read_fd_set);/*clear set*/
                     FD_SET(fd,&read_fd_set);/*put the fd in the set*/

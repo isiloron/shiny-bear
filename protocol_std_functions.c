@@ -118,6 +118,12 @@ rtp* receiveFrame(int socket, struct sockaddr_in clientAddr){
     return frame;
 }
 
+void resetShortTimeout(struct timeval* shortTimeout)
+{
+    shortTimeout->tv_sec = 0;
+    shortTimeout->tv_usec = 200000; /*200 millisec*/
+}
+
 //TODO CRC
 void setCrc(int* crc, rtp* frame) {
 
