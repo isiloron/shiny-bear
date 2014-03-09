@@ -66,35 +66,19 @@ int main(int argc, char **argv)
                     {
                         printf("Reading something... \n");
 
-                        recvfrom(fd, serializedSegment, sizeof(rtp), 0, (struct sockaddr *)&remaddr, &addrlen);/*received serialized segment*/
-
-                        frame = newFrame(0, 0, 0, 0);/*create empty frame, to put serializedSegment in*/
-
-                        buf = newBuffer();/*create helpbuffer for deserializing*/
-
-                        buf->data = serializedSegment;/*put serialized segment in buffer*/
-
-                        deserializeFrame(frame, buf);/*Deserialize the received segment stored in buf into the created frame*/
-
-                        /*check CRC before reading frame*/
+                        receiveFrame(fd, remaddr);
 
                         if (frame->flags == SYN)/*expected frame received */
                         {
                             printf("Received SYN\n");
 
                             free(frame);
-                            free(buf);
 
-                            frame = newFrame(SYN+ACK, seq, crc, data);//create a SYN+ACK frame
+                            frame = newFrame(SYN+ACK, 0, 0, 0);//create a SYN+ACK frame
 
-                            buf = newBuffer();/*create helpbuffer for serializing*/
+                            sendFrame(fd, frame, remaddr);
 
-                            serializeFrame(frame, buf);/*Serialize the frame into buf*/
-
-                            /*check crc before sending*/
-
-                            printf("Sending SYN + ACK\n");
-                            sendto(fd, buf, sizeof(rtp), 0, (struct sockaddr *)&remaddr, addrlen);/*send serialized_segment in buf to client*/
+                            printf("Sent SYN + ACK\n");
 
                             state = SYN_RECEIVED;/*Move to next state*/
 
