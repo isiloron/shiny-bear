@@ -45,15 +45,16 @@ int main(int argc, char **argv)
                 printf("Listening for SYN...\n");
 
                 longTimeOut = 600;/*number of short timeouts that will correspond to one long timeout*/
-                FD_ZERO(&read_fd_set);/*clear set*/
-                FD_SET(fd,&read_fd_set);/*put the fd in the set for reading*/
 
                 /*the for-loop represents a long time out, and one iteration represent a short time out*/
                 for(numOfshortTimeouts = 0; numOfshortTimeouts < longTimeOut; numOfshortTimeouts ++)
                 {
                     resetShortTimeout(&shortTimeout);
 
-                    returnval = select(1, &read_fd_set, NULL, NULL, &shortTimeout);/*wait for something to be read on the filedescriptor in the set*/
+                    FD_ZERO(&read_fd_set);/*clear set*/
+                    FD_SET(fd,&read_fd_set);/*put the fd in the set for reading*/
+
+                    returnval = select(fd + 1, &read_fd_set, NULL, NULL, &shortTimeout);/*wait for something to be read on the filedescriptor in the set*/
 
                     if(returnval == -1)/*ERROR*/
                     {
@@ -63,11 +64,11 @@ int main(int argc, char **argv)
                     else if(returnval == 0){}/*short timeout, no request to connect received*/
                     else/*there is something to read on the filedescriptor*/
                     {
-                        printf("Reading... \n");
+                        printf("Reading something... \n");
 
                         recvfrom(fd, serializedSegment, sizeof(rtp), 0, (struct sockaddr *)&remaddr, &addrlen);/*received serialized segment*/
 
-                        frame = newFrame(flags, seq, crc, data);/*create empty frame, to put serializedSegment in*/
+                        frame = newFrame(0, 0, 0, 0);/*create empty frame, to put serializedSegment in*/
 
                         buf = newBuffer();/*create helpbuffer for deserializing*/
 
@@ -79,12 +80,12 @@ int main(int argc, char **argv)
 
                         if (frame->flags == SYN)/*expected frame received */
                         {
-                            printf("Received SYN!\n");
+                            printf("Received SYN\n");
 
                             free(frame);
                             free(buf);
 
-                            frame = newFrame(flags, seq, crc, data);//create a SYN+ACK frame
+                            frame = newFrame(SYN+ACK, seq, crc, data);//create a SYN+ACK frame
 
                             buf = newBuffer();/*create helpbuffer for serializing*/
 
@@ -92,6 +93,7 @@ int main(int argc, char **argv)
 
                             /*check crc before sending*/
 
+                            printf("Sending SYN + ACK\n");
                             sendto(fd, buf, sizeof(rtp), 0, (struct sockaddr *)&remaddr, addrlen);/*send serialized_segment in buf to client*/
 
                             state = SYN_RECEIVED;/*Move to next state*/
@@ -100,7 +102,7 @@ int main(int argc, char **argv)
                         }/*End of expected frame received*/
                         else/*unexpected packet recieved*/
                         {
-                            printf("Expecting SYN: Unexpected frame received! Throw away!\n");
+                            printf("Expecting SYN: Unexpected frame received. Throw away!\n");
                             /*throw away frame, keep listening*/
 
                             /*delete the created frame/buf */
@@ -110,11 +112,14 @@ int main(int argc, char **argv)
                     }/*End of something to read*/
                 }/*End of for-loop*/
 
+                if(state != SYN_RECEIVED)
+                {
                 /*Long time out triggered! Reset connection setup*/
                 printf("Long timeout!\n");
                 state = CLOSED;
 
                 break;
+                }
             }/*End of case LISTEN*/
 
             case SYN_RECEIVED:
@@ -122,8 +127,6 @@ int main(int argc, char **argv)
                 printf("Listening for ACK...\n");
 
                 longTimeOut = 600;/*number of short timeouts that will correspond to a long timeout*/
-                FD_ZERO(&read_fd_set);/*clear set*/
-                FD_SET(fd,&read_fd_set);/*put the fd in the set*/
 
                 /*the for-loop represents a long time out, and one iteration represent a short time out*/
                 for(numOfshortTimeouts = 0; numOfshortTimeouts < longTimeOut; numOfshortTimeouts++)
@@ -132,8 +135,11 @@ int main(int argc, char **argv)
                     shortTimeout.tv_sec = 0;
                     shortTimeout.tv_usec = 200000;
 
+                    FD_ZERO(&read_fd_set);/*clear set*/
+                    FD_SET(fd,&read_fd_set);/*put the fd in the set*/
+
                     /*wait for something to be read on the filedescriptor in the set*/
-                    returnval = select(1, &read_fd_set, NULL, NULL, &shortTimeout);
+                    returnval = select(fd + 1, &read_fd_set, NULL, NULL, &shortTimeout);
 
                     if(returnval == -1)/*ERROR*/
                     {
