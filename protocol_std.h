@@ -45,6 +45,8 @@ void serializeChar(char c, struct Buffer* buf);
 void deserializeFrame(rtp* packet, struct Buffer* buf);
 void deserializeInt(int* n, struct Buffer* buf);
 void deserializeChar(char* c, struct Buffer* buf);
+int sendFrame(int socket, rtp* frame, struct sockaddr_in dest);
+rtp* receiveFrame(int socket, struct sockaddr* clientAddr);
 
 
 #endif //PROTOCOL_STD_H
