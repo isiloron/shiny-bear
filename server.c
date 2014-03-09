@@ -55,7 +55,7 @@ int main(int argc, char **argv)
                     {
                         printf("Reading something... \n");
 
-                        frame = receiveFrame(fd, remaddr);
+                        frame = receiveFrame(fd, &remaddr);
 
                         if (frame->flags == SYN)/*expected frame received */
                         {

@@ -25,14 +25,16 @@
 /*Timeouts*/
 #define longTimeOut 600
 
-typedef struct rtp_struct {
+typedef struct rtp_struct
+{
     int flags;
     int seq; //sequence number (frame number)
     int crc; //crc error check code
     char data; //one character at a time, if flag is INF then the char value is the number of characters in the complete message.
 } rtp;
 
-struct Buffer {
+struct Buffer
+{
     void* data;
     int next;
     size_t size;
@@ -49,8 +51,9 @@ void deserializeFrame(rtp* packet, struct Buffer* buf);
 void deserializeInt(int* n, struct Buffer* buf);
 void deserializeChar(char* c, struct Buffer* buf);
 int sendFrame(int socket, rtp* frame, struct sockaddr_in dest);
-rtp* receiveFrame(int socket, struct sockaddr_in clientAddr);
+rtp* receiveFrame(int socket, struct sockaddr_in* sourceAddr);
 void resetShortTimeout(struct timeval* shortTimeout);
+int waitForFrame(int fd, struct timeval* shortTimeout);
 
 
 #endif //PROTOCOL_STD_H
