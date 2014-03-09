@@ -3,7 +3,7 @@
 rtp* newFrame(int flags, int seq, int crc, char data)
 {
     rtp* frame = malloc(sizeof(rtp));
-    if(frame!=NULL)
+    if(frame==NULL)
     {
         perror("Failed to create frame!\n");
         return NULL;
