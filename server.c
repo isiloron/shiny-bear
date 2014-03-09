@@ -1,5 +1,5 @@
 #include "server.h"
-/*UDP_packet is not a reasonable name, cuz it is not a UDP_packet! Rename it to "frame" or something like that:P*/
+/*frame is not a reasonable name, cuz it is not a frame! Rename it to "frame" or something like that:P*/
 int main(int argc, char **argv)
 {
     int state = CLOSED;
@@ -14,75 +14,46 @@ int main(int argc, char **argv)
 
     /*udp packet members*/
     int flags = 0;
-    int id = 0;
     int seq = 0;
     int crc = 0;
     char data = 0;
 
     /*Timeouts*/
     int longTimeOut = 0;
-    rtp* UDP_packet = NULL;
-    struct timeval shortTimeOut;
-    int numOfShortTimeOuts = 0; /*iteration konstant for tiemouts*/
+    rtp* frame = NULL;
+    struct timeval shortTimeout;
+    int numOfshortTimeouts = 0; /*iteration konstant for tiemouts*/
 
-    while(1)
+    while(1)/*for now press Ctr + 'c' to exit program*/
     {
         switch(state)
         {
             case CLOSED:
             {
-                /*Close (if any) old socket*/
-                close(fd);
+                close(fd);/*Close (if any) old socket*/
 
-                /* Try to create and open up a new UDP socket */
-                if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-                {
-                    printf("Could not create UDP socket!\n");
-                    exit(0);
-                }
-                /* Try to bind the socket to any valid IP address*/
-                else
-                {
-                    printf("Successfully created a Socket!\n");
+                fd = createSocket();/* Try to create and open up a new UDP socket */
 
-                    memset((char *)&myaddr, 0, sizeof(myaddr));
-                    myaddr.sin_family = AF_INET;
-                    myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-                    myaddr.sin_port = htons(PORT);
+                state = bind_UDP_Socket(&myaddr, fd);/* Try to bind the socket to any valid IP address*/
 
-                    if(bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr)) < 0)
-                    {
-                        printf("Could not bind the socket!\n");
-                        exit(0);
-                    }
-                    else/*created and bound a socket successfully, go to next state*/
-                    {
-                        printf("Successfully bound a Socket!\n");
-                        state = LISTEN;
-                    }
-                }
                 break;
 
             }/*End of case CLOSED*/
 
             case LISTEN:
             {
-                /*wait for SYN from client*/
                 printf("Listening for SYN...\n");
 
-                longTimeOut = 600;/*number of short timeouts that will correspond to a long timeout*/
+                longTimeOut = 600;/*number of short timeouts that will correspond to one long timeout*/
                 FD_ZERO(&read_fd_set);/*clear set*/
-                FD_SET(fd,&read_fd_set);/*put the fd in the set*/
+                FD_SET(fd,&read_fd_set);/*put the fd in the set for reading*/
 
                 /*the for-loop represents a long time out, and one iteration represent a short time out*/
-                for(numOfShortTimeOuts = 0; numOfShortTimeOuts < longTimeOut; numOfShortTimeOuts++)
+                for(numOfshortTimeouts = 0; numOfshortTimeouts < longTimeOut; numOfshortTimeouts ++)
                 {
-                    /*Set time for short timeouts*/
-                    shortTimeOut.tv_sec = 0;
-                    shortTimeOut.tv_usec = 200000;
+                    resetShortTimeout(&shortTimeout);
 
-                    /*wait for something to be read on the filedescriptor in the set*/
-                    returnval = select(1, &read_fd_set, NULL, NULL, &shortTimeOut);
+                    returnval = select(1, &read_fd_set, NULL, NULL, &shortTimeout);/*wait for something to be read on the filedescriptor in the set*/
 
                     if(returnval == -1)/*ERROR*/
                     {
@@ -94,69 +65,60 @@ int main(int argc, char **argv)
                     {
                         printf("Reading... \n");
 
-                        /*received serialized segment*/
-                        recvfrom(fd, serializedSegment, sizeof(rtp), 0, (struct sockaddr *)&remaddr, &addrlen);
+                        recvfrom(fd, serializedSegment, sizeof(rtp), 0, (struct sockaddr *)&remaddr, &addrlen);/*received serialized segment*/
 
-                        /*create empty packet struct, to put serializedSegment in*/
-                        UDP_packet = createNewPacket(flags, id, seq, crc, data);
+                        frame = newFrame(flags, seq, crc, data);/*create empty frame, to put serializedSegment in*/
 
-                        /*create helpbuffer for deserializing*/
-                        buf = newBuffer();
-                        buf->data = serializedSegment;
+                        buf = newBuffer();/*create helpbuffer for deserializing*/
 
-                        /*Deserialize the received segment stored in buf into the created UDP packet*/
-                        deserializeRtpStruct(UDP_packet, buf);
+                        buf->data = serializedSegment;/*put serialized segment in buffer*/
 
-                        /*check CRC before opening packet*/
+                        deserializeRtpStruct(frame, buf);/*Deserialize the received segment stored in buf into the created frame*/
 
-                        /*expected packet received */
-                        if (UDP_packet->flags == SYN)
+                        /*check CRC before reading frame*/
+
+                        if (frame->flags == SYN)/*expected frame received */
                         {
                             printf("Received SYN!\n");
 
-                            free(UDP_packet);
+                            free(frame);
                             free(buf);
 
-                            //create a SYN+ACK packet
-                            UDP_packet = createNewPacket(flags, id, seq, crc, data);
+                            frame = newFrame(flags, seq, crc, data);//create a SYN+ACK frame
 
-                            /*create helpbuffer for serializing*/
-                            buf = newBuffer();
+                            buf = newBuffer();/*create helpbuffer for serializing*/
 
-                            /*Serialize the packet into buf*/
-                            serializeRtpStruct(UDP_packet, buf);
+                            serializeRtpStruct(frame, buf);/*Serialize the frame into buf*/
 
                             /*check crc before sending*/
 
-                            /*send serialized_segment in buf to client*/
-                            sendto(fd, buf, sizeof(rtp), 0, (struct sockaddr *)&remaddr, addrlen);
+                            sendto(fd, buf, sizeof(rtp), 0, (struct sockaddr *)&remaddr, addrlen);/*send serialized_segment in buf to client*/
 
-                            /*Move to next state*/
-                            state = SYN_RECEIVED;
+                            state = SYN_RECEIVED;/*Move to next state*/
+
                             break;
-                        }/*End of if expected received*/
+                        }/*End of expected frame received*/
                         else/*unexpected packet recieved*/
                         {
-                            printf("Expecting SYN: Unexpected packet received! Trow away!\n");
-                            /*throw away packet, keep listening*/
+                            printf("Expecting SYN: Unexpected frame received! Throw away!\n");
+                            /*throw away frame, keep listening*/
 
-                            /*delete the created packet/buf */
-                            free(UDP_packet);
+                            /*delete the created frame/buf */
+                            free(frame);
                             free(buf);
-                        }
-                    }/*Enf of something to read*/
+                        }/*End of unexpected frame received*/
+                    }/*End of something to read*/
                 }/*End of for-loop*/
 
                 /*Long time out triggered! Reset connection setup*/
                 printf("Long timeout!\n");
                 state = CLOSED;
+
                 break;
             }/*End of case LISTEN*/
 
             case SYN_RECEIVED:
             {
-                /*Awaiting ACK from client*/
-
                 printf("Listening for ACK...\n");
 
                 longTimeOut = 600;/*number of short timeouts that will correspond to a long timeout*/
@@ -164,14 +126,14 @@ int main(int argc, char **argv)
                 FD_SET(fd,&read_fd_set);/*put the fd in the set*/
 
                 /*the for-loop represents a long time out, and one iteration represent a short time out*/
-                for(numOfShortTimeOuts = 0; numOfShortTimeOuts < longTimeOut; numOfShortTimeOuts++)
+                for(numOfshortTimeouts = 0; numOfshortTimeouts < longTimeOut; numOfshortTimeouts++)
                 {
                     /*Set time for short timeouts*/
-                    shortTimeOut.tv_sec = 0;
-                    shortTimeOut.tv_usec = 200000;
+                    shortTimeout.tv_sec = 0;
+                    shortTimeout.tv_usec = 200000;
 
                     /*wait for something to be read on the filedescriptor in the set*/
-                    returnval = select(1, &read_fd_set, NULL, NULL, &shortTimeOut);
+                    returnval = select(1, &read_fd_set, NULL, NULL, &shortTimeout);
 
                     if(returnval == -1)/*ERROR*/
                     {
@@ -187,25 +149,25 @@ int main(int argc, char **argv)
                         recvfrom(fd, serializedSegment, sizeof(rtp), 0, (struct sockaddr *)&remaddr, &addrlen);
 
                         /*create empty packet struct, to put received serialized segment in*/
-                        UDP_packet = createNewPacket(flags, id, seq, crc, data);
+                        frame = newFrame(flags, seq, crc, data);
 
                         /*create helpbuffer for deserializing*/
                         buf = newBuffer();
                         buf->data = serializedSegment;
 
                         /*Deserialize the received segment stored in buf into the created UDP packet*/
-                        deserializeRtpStruct(UDP_packet, buf);
+                        deserializeRtpStruct(frame, buf);
 
                         /*check CRC before opening packet*/
 
                         /*expected packet received */
-                        if (UDP_packet->flags == ACK)
+                        if (frame->flags == ACK)
                         {
                             printf("Received ACK!\n");
 
                             state = ESTABLISHED;
 
-                            free(UDP_packet);
+                            free(frame);
                             free(buf);
 
                             break;
@@ -214,16 +176,15 @@ int main(int argc, char **argv)
                         else
                         {
                             printf("Expecting ACK: Unexpected packet received! Trow away!\n");
-                            free(UDP_packet);
+                            free(frame);
                             free(buf);
                         }
                     }/*End of something to read*/
                 }/*End of for-loop*/
 
-                /*Long time out triggered! Reset connection setup*/
-
-                printf("Long timeout!\n");
+                printf("Long timeout! Reset connection setup\n");
                 state = CLOSED;
+
                 break;
 
             }/*End of CASE SYN_RECEIVED*/
@@ -240,29 +201,28 @@ int main(int argc, char **argv)
                     /*received serialize segment*/
                     recvfrom(fd, serializedSegment, sizeof(rtp), 0, (struct sockaddr *)&remaddr, &addrlen);
 
-                    /*create empty UDP_packet, to put deserialized segment in*/
-                    UDP_packet = createNewPacket(flags, id, seq, crc, data);
+                    /*create empty frame, to put deserialized segment in*/
+                    frame = newFrame(flags, seq, crc, data);
 
                     /*create helpbuffer for deserializing*/
                     buf = newBuffer();
                     buf->data = serializedSegment;
 
-                    /*Deserialize the received segment stored in buf into the created UDP packet*/
-                    deserializeRtpStruct(UDP_packet, buf);
+                    /*Deserialize the received segment stored in buf into the created frame*/
+                    deserializeRtpStruct(frame, buf);
 
-                    /*check CRC before opening packet*/
+                    /*check CRC before opening frame*/
 
-                    printf("MSG received: %c \n", UDP_packet->data);
+                    printf("MSG received: %c \n", frame->data);
 
-                    free(UDP_packet);
+                    free(frame);
                     free(buf);
                 }
+
                 break;
-
             }/*End of CASE ESTABLISHED*/
-
         }/*End of switch*/
-    }
+    }/*End of while(1)*/
 
     return 0;
 }
