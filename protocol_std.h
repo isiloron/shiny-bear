@@ -13,7 +13,7 @@
 
 #define PORT 5555
 #define MAXMSG 254 //char (-1 for '\0')
-#define MAXSEQ 1024
+#define MAXSEQ 16
 #define WINDSIZE 8
 
 //flags
