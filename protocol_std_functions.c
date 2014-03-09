@@ -75,6 +75,7 @@ void deserializeChar(char* c, struct Buffer* buf) {
 int sendFrame(int socket, rtp* frame, struct sockaddr_in dest) {
     struct Buffer* buffer = newBuffer();
     int bytesSent = 0;
+    //TODO: CRC
     serializeFrame(frame, buffer);
     bytesSent = sendto(socket, buffer->data, sizeof(*buffer->data), 0, (struct sockaddr*)&dest, sizeof(dest));
     free(buffer);
