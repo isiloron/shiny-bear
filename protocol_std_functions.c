@@ -85,19 +85,15 @@ int sendFrame(int socket, rtp* frame, struct sockaddr_in dest) {
 rtp* receiveFrame(int socket, struct sockaddr_in clientAddr){
 
     rtp* frame = NULL;/*framepointer*/
-    struct Buffer* buf;/*help struct for serializing and deserializing*/
-
-    buf = newBuffer();/*create helpbuffer for deserializing*/
-
-    recvfrom(socket, buf->data, sizeof(*(buf->data)), 0, (struct sockaddr*)&clientAddr, (socklen_t*)sizeof(clientAddr));/*received serialized segment*/
-
+    struct Buffer* buffer;/*help struct for serializing and deserializing*/
+    buffer = newBuffer();/*create helpbuffer for deserializing*/
+    recvfrom(socket, buffer->data, sizeof(*(buffer->data)), 0, (struct sockaddr*)&clientAddr, (socklen_t*)sizeof(clientAddr));/*received serialized segment*/
     frame = newFrame(0, 0, 0, 0);/*create empty frame, to put serializedSegment in*/
+    deserializeFrame(frame, buffer);/*Deserialize the received segment stored in buffer into the created frame*/
 
-    deserializeFrame(frame, buf);/*Deserialize the received segment stored in buf into the created frame*/
+    //TODO: CRC
 
-    /*check frame CRC before sending frame*/
-
-    free(buf);
+    free(buffer);
 
     return frame;
 }

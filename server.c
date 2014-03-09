@@ -7,16 +7,7 @@ int main(int argc, char **argv)
     int fd;/* our socket (filedescriptor)*/
     struct sockaddr_in myaddr;/* our address */
     struct sockaddr_in remaddr;/* remote address */
-    socklen_t addrlen = sizeof(remaddr);/* length of addresses */
-    void* serializedSegment = malloc(sizeof(rtp)); /*mem addresses to hold serialized sequences*/
-    struct Buffer* buf;/*fhelp struct for serializing and deserializing*/
     int returnval; /*for checking returnval on select()*/
-
-    /*udp packet members*/
-    int flags = 0;
-    int seq = 0;
-    int crc = 0;
-    char data = 0;
 
     /*Timeouts*/
     int longTimeOut = 0;
@@ -66,7 +57,7 @@ int main(int argc, char **argv)
                     {
                         printf("Reading something... \n");
 
-                        receiveFrame(fd, remaddr);
+                        frame = receiveFrame(fd, remaddr);
 
                         if (frame->flags == SYN)/*expected frame received */
                         {
@@ -82,6 +73,9 @@ int main(int argc, char **argv)
 
                             state = SYN_RECEIVED;/*Move to next state*/
 
+                            /*delete the created frame */
+                            free(frame);
+
                             break;
                         }/*End of expected frame received*/
                         else/*unexpected packet recieved*/
@@ -89,9 +83,9 @@ int main(int argc, char **argv)
                             printf("Expecting SYN: Unexpected frame received. Throw away!\n");
                             /*throw away frame, keep listening*/
 
-                            /*delete the created frame/buf */
+                            /*delete the created frame */
                             free(frame);
-                            free(buf);
+
                         }/*End of unexpected frame received*/
                     }/*End of something to read*/
                 }/*End of for-loop*/
@@ -135,20 +129,7 @@ int main(int argc, char **argv)
                     {
                         printf("Reading... \n");
 
-                        /*received serialize segment */
-                        recvfrom(fd, serializedSegment, sizeof(rtp), 0, (struct sockaddr *)&remaddr, &addrlen);
-
-                        /*create empty packet struct, to put received serialized segment in*/
-                        frame = newFrame(flags, seq, crc, data);
-
-                        /*create helpbuffer for deserializing*/
-                        buf = newBuffer();
-                        buf->data = serializedSegment;
-
-                        /*Deserialize the received segment stored in buf into the created UDP packet*/
-                        deserializeFrame(frame, buf);
-
-                        /*check CRC before opening packet*/
+                        frame = receiveFrame(fd, remaddr);
 
                         /*expected packet received */
                         if (frame->flags == ACK)
@@ -157,8 +138,8 @@ int main(int argc, char **argv)
 
                             state = ESTABLISHED;
 
+                            /*delete the created frame */
                             free(frame);
-                            free(buf);
 
                             break;
                         }
@@ -166,8 +147,8 @@ int main(int argc, char **argv)
                         else
                         {
                             printf("Expecting ACK: Unexpected packet received! Trow away!\n");
+                            /*delete the created frame */
                             free(frame);
-                            free(buf);
                         }
                     }/*End of something to read*/
                 }/*End of for-loop*/
@@ -188,25 +169,11 @@ int main(int argc, char **argv)
                     /*Await client to send something, forevA*/
                     select(1, &read_fd_set, NULL, NULL, NULL);
 
-                    /*received serialize segment*/
-                    recvfrom(fd, serializedSegment, sizeof(rtp), 0, (struct sockaddr *)&remaddr, &addrlen);
+                    frame = receiveFrame(fd, remaddr);
 
-                    /*create empty frame, to put deserialized segment in*/
-                    frame = newFrame(flags, seq, crc, data);
-
-                    /*create helpbuffer for deserializing*/
-                    buf = newBuffer();
-                    buf->data = serializedSegment;
-
-                    /*Deserialize the received segment stored in buf into the created frame*/
-                    deserializeFrame(frame, buf);
-
-                    /*check CRC before opening frame*/
-
-                    printf("MSG received: %c \n", frame->data);
+                    printf("Incoming msg: %c \n", frame->data);
 
                     free(frame);
-                    free(buf);
                 }
 
                 break;
