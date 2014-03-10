@@ -170,13 +170,28 @@ int main(int argc, char **argv)
 
                     frame = receiveFrame(fd, &remaddr);
 
+                    if(frame->flags == FIN)
+                    {
+                        state = RESPOND_TEARDOWN;
+                        free(frame);
+                        break;
+                    }
+                    else
+                    {
                     printf("Incoming msg: %c \n", frame->data);
-
                     free(frame);
+                    }
                 }
 
                 break;
             }/*End of CASE ESTABLISHED*/
+
+            case RESPOND_TEARDOWN:
+            {
+                state = teardownResponse(fd, &shortTimeout, &remaddr);
+
+                break;
+            }/*End of CASE RESPOND_TEARDOWN*/
         }/*End of switch*/
     }/*End of while(1)*/
 
