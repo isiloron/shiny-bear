@@ -227,7 +227,7 @@ int teardownInitiation(int state, int fd, struct timeval* shortTimeout, struct s
                     break;
                 }
 
-                printf("Long timeout! State CLOSED.\n");
+                printf("Long timeout! Closing socket.\n");
                 state = CLOSED;
                 return state;
 
@@ -269,7 +269,7 @@ int teardownInitiation(int state, int fd, struct timeval* shortTimeout, struct s
                     break;
                 }
 
-                printf("Long timeout! State CLOSED.\n");
+                printf("Long timeout! Closing socket.\n");
                 state = CLOSED;
                 return state;
 
@@ -306,7 +306,7 @@ int teardownInitiation(int state, int fd, struct timeval* shortTimeout, struct s
                     break;
                 }
 
-                printf("Long timeout! State CLOSED.\n");
+                printf("Long timeout! Closing socket.\n");
                 state = CLOSED;
                 return state;
 
@@ -318,7 +318,7 @@ int teardownInitiation(int state, int fd, struct timeval* shortTimeout, struct s
 
                 if(waitForFrame(fd, shortTimeout) == 0)// short timeout, socket closed successfully
                 {
-                    printf("Long timeout! State CLOSED.\n");
+                    printf("Socket closed successfully \n");
                     state = CLOSED;
                     return state;
                 }
@@ -388,7 +388,7 @@ int teardownResponse(int state, int fd, struct timeval* shortTimeout, struct soc
                     break;
                 }
 
-                printf("Long timeout! State CLOSED.\n");
+                printf("Long timeout! Closing socket.\n");
                 state = CLOSED;
                 return state;
 
@@ -426,6 +426,7 @@ int teardownResponse(int state, int fd, struct timeval* shortTimeout, struct soc
                             printf("ACK received!\n");
                             free(frameToSend);
                             state = CLOSED;
+                            printf("Socket closed successfully \n");
                             return state;
                         }
                         else /*received unexpected packet*/
@@ -437,7 +438,7 @@ int teardownResponse(int state, int fd, struct timeval* shortTimeout, struct soc
                     }
                 }/*End of for-loop*/
 
-                printf("Long timeout! State CLOSED.\n");
+                printf("Long timeout! Closing socket.\n");
                 state = CLOSED;
                 return state;
 

@@ -177,6 +177,18 @@ int main(int argc, char **argv)
 
                 break;
             }/*End of CASE ESTABLISHED*/
+
+            case INITIATE_TEARDOWN:
+            {
+
+                break;
+            }/*End of CASE INITIATE_TEARDOWN*/
+
+            case RESPOND_TEARDOWN:
+            {
+
+                break;
+            }/*End of CASE RESPOND_TEARDOWN*/
         }/*End of switch*/
     }/*End of while(1)*/
 
