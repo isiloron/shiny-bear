@@ -19,7 +19,6 @@ int main(int argc, char *argv[])
     //int winEndSeq = 0;
     //int bytesSent = 0;
     char hostName[hostNameLength];
-
     struct timeval shortTimeout;
     int numOfShortTimeouts = 0;
 
@@ -69,6 +68,7 @@ int main(int argc, char *argv[])
                         frameToSend = newFrame(ACK,0,0,0);
                         sendFrame(sfd, frameToSend, servAddr);
                         free(frameToSend);
+                        free(receivedFrame);
                         state = PRECAUTION;
                         break;
                     }
@@ -80,6 +80,7 @@ int main(int argc, char *argv[])
                 break;
             }
             printf("Long timeout! State CLOSED.\n");
+            close(sfd);
             state = CLOSED;
             break;
         case PRECAUTION:
@@ -110,11 +111,12 @@ int main(int argc, char *argv[])
                 break;
             }
             printf("Long timeout! State CLOSED.\n");
+            close(sfd);
             state = CLOSED;
             break;
         case ESTABLISHED:
-            while(1)
-                printf("ESTBLISHED STATE REACHED!\n");
+            printf("ESTBLISHED STATE REACHED!\n");
+            state = clientSlidingWindow(sfd, servAddr);
             break;
         case INIT_TEARDOWN:
             break;
