@@ -18,3 +18,12 @@ void prepareHostAddr(struct sockaddr_in* servAddr, char* hostName, int port)
     servAddr->sin_addr = *(struct in_addr *)hostInfo->h_addr;
     printf("Host Address prepared!\n");
 }
+
+int clientSlidingWindow(int sfd, struct sockaddr_in servAddr)
+{
+
+    char messageString[MAXMSG];
+
+    fgets(messageString,MAXMSG,stdin);
+    messageString[MAXMSG-1] = '\0';
+}
