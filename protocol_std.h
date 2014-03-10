@@ -54,8 +54,8 @@ int sendFrame(int socket, rtp* frame, struct sockaddr_in dest);
 rtp* receiveFrame(int socket, struct sockaddr_in* sourceAddr);
 void resetShortTimeout(struct timeval* shortTimeout);
 int waitForFrame(int fd, struct timeval* shortTimeout);
-int teardownInitiation(int state, int fd, struct timeval* shortTimeout, struct sockaddr_in* sourceAddr);
-int teardownResponse(int state, int fd, struct timeval* shortTimeout, struct sockaddr_in* sourceAddr);
+int teardownInitiation(int fd, struct timeval* shortTimeout, struct sockaddr_in* sourceAddr);
+int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* sourceAddr);
 
 
 #endif //PROTOCOL_STD_H

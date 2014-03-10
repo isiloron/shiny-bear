@@ -8,8 +8,7 @@
 #define LISTEN 2
 #define SYN_RECEIVED 3
 #define ESTABLISHED 4
-#define INITIATE_TEARDOWN 5
-#define RESPOND_TEARDOWN 6
+#define RESPOND_TEARDOWN 5
 
 
 

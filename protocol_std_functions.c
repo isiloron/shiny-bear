@@ -163,19 +163,20 @@ int waitForFrame(int fd, struct timeval* shortTimeout)
 #define AWAIT_CLOSE 9
 #define AWAIT_ACK 10
 
-int teardownInitiation(int state, int fd, struct timeval* shortTimeout, struct sockaddr_in* sourceAddr)
+int teardownInitiation(int fd, struct timeval* shortTimeout, struct sockaddr_in* sourceAddr)
 {
     /*TODO Application close*/
 
     rtp* receivedFrame = NULL;
     rtp* frameToSend = NULL;
     int numOfShortTimeouts = 0;
+    int state = FIN_SENT;
 
     frameToSend = newFrame(FIN, 0, 0, 0);//create a FIN frame
     sendFrame(fd, frameToSend, *sourceAddr); /*send FIN*/
     printf("FIN sent \n");
     free(frameToSend);
-    state = FIN_SENT;
+
 
     while(1)
     {
@@ -327,7 +328,7 @@ int teardownInitiation(int state, int fd, struct timeval* shortTimeout, struct s
     }/*End of while*/
 }
 
-int teardownResponse(int state, int fd, struct timeval* shortTimeout, struct sockaddr_in* sourceAddr)
+int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* sourceAddr)
 {
     /*TODO Application close*/
 
@@ -335,12 +336,13 @@ int teardownResponse(int state, int fd, struct timeval* shortTimeout, struct soc
     rtp* frameToSend = NULL;
     int numOfShortTimeouts = 0;
     int applicationCloseDelay = 5;/* about 5 x 200ms = 1 sek delay*/
+    int state = AWAIT_CLOSE;
 
     frameToSend = newFrame(ACK, 0, 0, 0);//create a ACK frame
     sendFrame(fd, frameToSend, *sourceAddr); /*send ACK*/
     printf("ACK sent \n");
     free(frameToSend);
-    state = AWAIT_CLOSE;
+
 
     while(1)
     {
