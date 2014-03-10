@@ -156,7 +156,6 @@ int waitForFrame(int fd, struct timeval* shortTimeout)
 }
 
 #define CLOSED 1
-#define ESTABLISHED 4
 #define FIN_SENT 5
 #define AWAIT_FIN 6
 #define SIMULTANEOUS_CLOSE 7
@@ -164,23 +163,22 @@ int waitForFrame(int fd, struct timeval* shortTimeout)
 
 int teardownInitiation(int state, int fd, struct timeval* shortTimeout, struct sockaddr_in* sourceAddr)
 {
+    /*TODO Application close*/
+
     rtp* receivedFrame = NULL;
     rtp* frameToSend = NULL;
     int numOfShortTimeouts = 0;
+
+    frameToSend = newFrame(FIN, 0, 0, 0);//create a FIN frame
+    sendFrame(fd, frameToSend, *sourceAddr); /*send FIN*/
+    printf("FIN sent \n");
+    free(frameToSend);
+    state = FIN_SENT;
+
     while(1)
     {
         switch(state)
         {
-            case ESTABLISHED:
-            {
-                frameToSend = newFrame(FIN, 0, 0, 0);//create a FIN frame
-                sendFrame(fd, frameToSend, *sourceAddr); /*send FIN*/
-                printf("FIN sent \n");
-                free(frameToSend);
-                state = FIN_SENT;
-                break;
-            }/*End of case ESTABLISHED*/
-
             case FIN_SENT:
             {
                 for(numOfShortTimeouts=0; numOfShortTimeouts<longTimeOut; numOfShortTimeouts++)
