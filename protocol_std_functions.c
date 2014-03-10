@@ -22,7 +22,6 @@ void prepareSocket(int* sock_fd, struct sockaddr_in* sockaddr)
     printf("Socket prepared!\n");
 }
 
-
 rtp* newFrame(int flags, int seq, int crc, char data)
 {
     rtp* frame = malloc(sizeof(rtp));
@@ -154,6 +153,176 @@ int waitForFrame(int fd, struct timeval* shortTimeout)
         exit(EXIT_FAILURE);
     }
     return returnval;
+}
+
+#define CLOSED 1
+#define FIN_SENT 5
+#define AWAIT_FIN 6
+#define SIMULTANEOUS_CLOSE 7
+#define SHORT_WAIT 8
+
+int teardownInitiation(int state, int fd, struct timeval* shortTimeout, struct sockaddr_in* sourceAddr)
+{
+    /*TODO Application close*/
+
+    rtp* receivedFrame = NULL;
+    rtp* frameToSend = NULL;
+    int numOfShortTimeouts = 0;
+
+    frameToSend = newFrame(FIN, 0, 0, 0);//create a FIN frame
+    sendFrame(fd, frameToSend, *sourceAddr); /*send FIN*/
+    printf("FIN sent \n");
+    free(frameToSend);
+    state = FIN_SENT;
+
+    while(1)
+    {
+        switch(state)
+        {
+            case FIN_SENT:
+            {
+                for(numOfShortTimeouts=0; numOfShortTimeouts<longTimeOut; numOfShortTimeouts++)
+                {
+                    resetShortTimeout(shortTimeout);
+
+                    if(waitForFrame(fd, shortTimeout) == 0) // short timeout, Resend FIN
+                    {
+                        frameToSend = newFrame(FIN, 0, 0, 0);//recreate a FIN frame
+                        sendFrame(fd, frameToSend, *sourceAddr); /*resend FIN*/
+                        printf("FIN resent \n");
+                        free(frameToSend);
+                    }
+                    else //frame to read
+                    {
+                        receivedFrame = receiveFrame(fd, sourceAddr);
+
+                        if(receivedFrame->flags == ACK)/*received expected packet ACK*/
+                        {
+                            printf("ACK received!\n");
+                            state = AWAIT_FIN;
+                            break;
+                        }
+                        else if(receivedFrame->flags == FIN) /*received expected packet FIN (simultaneous close)*/
+                        {
+                            printf("FIN received \n");
+                            frameToSend = newFrame(ACK, 0, 0, 0);//create a ACK frame
+                            sendFrame(fd, frameToSend, *sourceAddr);
+                            printf("ACK SENT \n");
+                            free(receivedFrame);
+                            state = SIMULTANEOUS_CLOSE;
+                            break;
+                        }
+                        else /*received unexpected packet*/
+                        {
+                            printf("Unexpected packet received! \n");
+                            free(receivedFrame);
+                            break;
+                        }
+                    }
+                }/*End of for-loop*/
+                if( (state==SIMULTANEOUS_CLOSE) || (state==AWAIT_FIN) )
+                {
+                    break;
+                }
+
+                printf("Long timeout! State CLOSED.\n");
+                state = CLOSED;
+                return state;
+
+            }/*End of case FIN_SENT*/
+            case SIMULTANEOUS_CLOSE:
+            {
+                for(numOfShortTimeouts=0; numOfShortTimeouts<longTimeOut; numOfShortTimeouts++)
+                {
+                    resetShortTimeout(shortTimeout);
+
+                    if(waitForFrame(fd, shortTimeout) == 0) // short timeout, Resend ACK
+                    {
+                        frameToSend = newFrame(ACK, 0, 0, 0);//recreate a ACK frame
+                        sendFrame(fd, frameToSend, *sourceAddr); /*resend ACK*/
+                        printf("ACK resent \n");
+                        free(frameToSend);
+                    }
+                    else //frame to read
+                    {
+                        receivedFrame = receiveFrame(fd, sourceAddr);
+
+                        if(receivedFrame->flags == ACK)/*received expected packet ACK*/
+                        {
+                            printf("ACK received!\n");
+                            state = SHORT_WAIT;
+                            free(receivedFrame);
+                            break;
+                        }
+                        else /*received unexpected packet*/
+                        {
+                            printf("Unexpected packet received! \n");
+                            free(receivedFrame);
+                            break;
+                        }
+                    }
+                }/*End of for-loop*/
+                if( (state==SIMULTANEOUS_CLOSE) || (state==AWAIT_FIN) )
+                {
+                    break;
+                }
+
+                printf("Long timeout! State CLOSED.\n");
+                state = CLOSED;
+                return state;
+
+            }/*End of case SIMULTANEOUS_CLOSE*/
+
+            case AWAIT_FIN:
+            {
+                for(numOfShortTimeouts=0; numOfShortTimeouts<longTimeOut; numOfShortTimeouts++)
+                {
+                    resetShortTimeout(shortTimeout);
+
+                    if(waitForFrame(fd, shortTimeout) == 0){} // short timeout, do nothing
+                    else //frame to read
+                    {
+                        receivedFrame = receiveFrame(fd, sourceAddr);
+
+                        if(receivedFrame->flags == FIN)/*received expected packet FIN*/
+                        {
+                            printf("FIN received!\n");
+                            state = SHORT_WAIT;
+                            free(receivedFrame);
+                            break;
+                        }
+                        else /*received unexpected packet*/
+                        {
+                            printf("Unexpected packet received! \n");
+                            free(receivedFrame);
+                            break;
+                        }
+                    }
+                }/*End of for-loop*/
+                if(state==SHORT_WAIT)
+                {
+                    break;
+                }
+
+                printf("Long timeout! State CLOSED.\n");
+                state = CLOSED;
+                return state;
+
+            }/*End of case AWAIT_FIN*/
+
+            case SHORT_WAIT:
+            {
+                resetShortTimeout(shortTimeout);
+
+                if(waitForFrame(fd, shortTimeout) == 0)// short timeout, socket closed successfully
+                {
+                    printf("Long timeout! State CLOSED.\n");
+                    state = CLOSED;
+                    return state;
+                }
+            }/*End of case SHORT_WAIT*/
+        }/*End of switch*/
+    }/*End of while*/
 }
 
 //TODO CRC
