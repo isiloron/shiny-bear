@@ -19,11 +19,24 @@ void prepareHostAddr(struct sockaddr_in* servAddr, char* hostName, int port)
     printf("Host Address prepared!\n");
 }
 
-int clientSlidingWindow(int sfd, struct sockaddr_in servAddr)
+/*
+void* getInput(void* arg)
 {
-
-    char messageString[MAXMSG];
-
     fgets(messageString,MAXMSG,stdin);
     messageString[MAXMSG-1] = '\0';
 }
+
+int clientSlidingWindow(int sfd, struct sockaddr_in servAddr)
+{
+    //rtp* frameToSend;
+    //rtp* receivedFrame;
+    char messageString[MAXMSG];
+    pthread_t readThreadId;
+
+    if(pthread_create(&readThreadId,NULL,&readMessageFromServer, messageString)!=0)
+        error("Could not create reading thread!\n");
+
+
+
+}
+*/
