@@ -5,12 +5,13 @@ int main(int argc, char **argv)
     int state = CLOSED;
     fd_set read_fd_set; /*create a set for sockets*/
     int fd;/* our socket (filedescriptor)*/
-    struct sockaddr_in myaddr;/* our address */
+    struct sockaddr_in myaddr;/* server address */
     struct sockaddr_in remaddr;/* remote address */
     int returnval; /*for checking returnval on select()*/
 
     struct timeval shortTimeout;
     int numOfshortTimeouts = 0; /*iteration konstant for tiemouts*/
+    pthread_t readThreadId;
 
     rtp* frame = NULL;
 
@@ -162,6 +163,12 @@ int main(int argc, char **argv)
             case ESTABLISHED:
             {
                 printf("Connection established!\n");
+
+//                if(pthread_create(&readThreadId,NULL,&readMessageFromClient,&fd)!=0)
+//                {
+//                    printf("Could not create reading thread! \n");
+//                    exit(0);
+//                }
 
                 while(1)
                 {
