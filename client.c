@@ -13,7 +13,8 @@
 int main(int argc, char *argv[])
 {
     int sfd;
-    struct sockaddr_in myAddr, servAddr;
+    struct sockaddr_in myAddr;
+    struct sockaddr_in servAddr;
     rtp* frameToSend;
     rtp* receivedFrame;
     //int winStartSeq = 0;
@@ -119,22 +120,20 @@ int main(int argc, char *argv[])
                 break;
 
             case ESTABLISHED:
-                printf("ESTBLISHED STATE REACHED!\n");
-                //state = clientSlidingWindow(sfd, servAddr);
-                /*char message[50];
-                for(;;)
+                printf("ESTABLISHED STATE REACHED!\n");
+                if(clientSlidingWindow(sfd, &servAddr) == 0)
                 {
-                    fgets(message,50,stdin);
-                    message[50-1] = '\0';
-                    if(strncmp(message,"quit\n",50)==0)
-                    {*/
-                frameToSend = newFrame(FIN,0,0,0);
-                sendFrame(sfd, frameToSend, servAddr);
-                free(frameToSend);
-                state = FIN_SENT;
-                /*break;
-                                }
-                            }*/
+                    frameToSend = newFrame(FIN,0,0,0);
+                    sendFrame(sfd, frameToSend, servAddr);
+                    free(frameToSend);
+                    state = FIN_SENT;
+                }
+                else
+                {
+                    printf("Long timeout! State CLOSED.\n");
+                    close(sfd);
+                    state = CLOSED;
+                }
                 break;
 
             case FIN_SENT:
@@ -213,7 +212,7 @@ int main(int argc, char *argv[])
                 printf("Long timeout! Closing socket.\n");
                 close(sfd);
                 state = CLOSED;
-                return state;
+                break;
 
             case SHORT_WAIT:
                 usleep(200000);

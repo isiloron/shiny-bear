@@ -11,7 +11,6 @@ int main(int argc, char **argv)
 
     struct timeval shortTimeout;
     int numOfshortTimeouts = 0; /*iteration konstant for tiemouts*/
-    pthread_t readThreadId;
 
     rtp* frame = NULL;
 

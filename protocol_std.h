@@ -48,7 +48,7 @@ void reserveSpace(struct Buffer* buf, size_t bytes);
 void serializeFrame(rtp* frame, struct Buffer* buf);
 void serializeInt(int n, struct Buffer* buf);
 void serializeChar(char c, struct Buffer* buf);
-void deserializeFrame(rtp* packet, struct Buffer* buf);
+void deserializeFrame(rtp* frame, struct Buffer* buf);
 void deserializeInt(int* n, struct Buffer* buf);
 void deserializeChar(char* c, struct Buffer* buf);
 int sendFrame(int socket, rtp* frame, struct sockaddr_in dest);
