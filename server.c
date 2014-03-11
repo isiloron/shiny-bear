@@ -9,6 +9,7 @@ int main(int argc, char **argv)
     struct sockaddr_in myaddr;/* server address */
     struct sockaddr_in remaddr;/* remote address */
     int returnval; /*for checking returnval on select()*/
+    int framecount = 0;
 
     struct timeval shortTimeout;
     int numOfshortTimeouts = 0; /*iteration konstant for tiemouts*/
@@ -180,11 +181,18 @@ int main(int argc, char **argv)
                         free(frame);
                         break;
                     }
-                    else if(frame->flags == ACK)/*receive message*/
+                    else
                     {
-                        printf("Incoming character: %c \n", frame->data);
+                        printf("________ numOfFrames received: %d \n", framecount);
+                        printf("FLAG: %d \n", frame->flags);
+                        printf("SEQ : %d \n", frame->seq);
+                        printf("CRC : %d \n", frame->crc);
+                        printf("DATA: %d \n", frame->data);
+                        framecount ++;
                         free(frame);
+
                     }
+
                 }
 
                 break;
