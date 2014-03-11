@@ -122,4 +122,3 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
 
 }
 
-

@@ -48,14 +48,13 @@ void reserveSpace(struct Buffer* buf, size_t bytes);
 void serializeFrame(rtp* frame, struct Buffer* buf);
 void serializeInt(int n, struct Buffer* buf);
 void serializeChar(char c, struct Buffer* buf);
-void deserializeFrame(rtp* packet, struct Buffer* buf);
+void deserializeFrame(rtp* frame, struct Buffer* buf);
 void deserializeInt(int* n, struct Buffer* buf);
 void deserializeChar(char* c, struct Buffer* buf);
 int sendFrame(int socket, rtp* frame, struct sockaddr_in dest);
 rtp* receiveFrame(int socket, struct sockaddr_in* sourceAddr);
 void resetShortTimeout(struct timeval* shortTimeout);
 int waitForFrame(int fd, struct timeval* shortTimeout);
-int teardownInitiation(int fd, struct timeval* shortTimeout, struct sockaddr_in* sourceAddr);
 
 
 
