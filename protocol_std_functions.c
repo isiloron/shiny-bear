@@ -2,7 +2,6 @@
 
 void prepareSocket(int* sock_fd, struct sockaddr_in* sockaddr)
 {
-    printf("Preparing socket... ");
     if((*sock_fd=socket(AF_INET, SOCK_DGRAM, 0))<0)
     {
         perror("Could not create socket.");

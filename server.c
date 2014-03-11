@@ -1,4 +1,5 @@
 #include "server.h"
+#include "protocol_std.h"
 /*frame is not a reasonable name, cuz it is not a frame! Rename it to "frame" or something like that:P*/
 int main(int argc, char **argv)
 {
@@ -11,7 +12,6 @@ int main(int argc, char **argv)
 
     struct timeval shortTimeout;
     int numOfshortTimeouts = 0; /*iteration konstant for tiemouts*/
-    pthread_t readThreadId;
 
     rtp* frame = NULL;
 
@@ -164,27 +164,26 @@ int main(int argc, char **argv)
             {
                 printf("Connection established!\n");
 
-//                if(pthread_create(&readThreadId,NULL,&readMessageFromClient,&fd)!=0)
-//                {
-//                    printf("Could not create reading thread! \n");
-//                    exit(0);
-//                }
-
                 while(1)
                 {
                     FD_ZERO(&read_fd_set);/*clear set*/
                     FD_SET(fd,&read_fd_set);/*put the fd in the set*/
 
-                    /*Await client to send something, forevA*/
+                    /*Await client to send something*/
                     select(fd + 1, &read_fd_set, NULL, NULL, NULL);
 
                     frame = receiveFrame(fd, &remaddr);
 
-                    if(frame->flags == FIN)
+                    if(frame->flags == FIN)/*receive request to teardown connection*/
                     {
                         state = RESPOND_TEARDOWN;
                         free(frame);
                         break;
+                    }
+                    else if(frame->flags == ACK)/*receive message*/
+                    {
+                        printf("Incoming character: %c \n", frame->data);
+                        free(frame);
                     }
                 }
 
@@ -195,7 +194,6 @@ int main(int argc, char **argv)
             {
                 printf("Request to close socket received \n");
                 state = teardownResponse(fd, &shortTimeout, &remaddr);
-
                 break;
             }/*End of CASE RESPOND_TEARDOWN*/
         }/*End of switch*/

@@ -28,10 +28,9 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
 
                     if(waitForFrame(fd, shortTimeout) == 0)// short timeout,
                     {
-                        printf("Wait for application to close. \n");
                         if(applicationCloseDelay == 0)//give 1 second delay so application will get a chance to close
                         {
-                            printf("application Closed. \n");
+                            printf("Application Closed. \n");
                             state = AWAIT_ACK;
                             break;
                         }
@@ -97,7 +96,7 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
                         else if(receivedFrame->flags == ACK)/*received expected packet ACK*/
                         {
                             printf("ACK received!\n");
-                            free(frameToSend);
+                            free(receivedFrame);
                             state = CLOSED;
                             break;
                         }
@@ -123,8 +122,4 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
 
 }
 
-void* readMessageFromClient(void* arg)
-{
-
-}
 
