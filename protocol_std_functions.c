@@ -165,6 +165,7 @@ int waitForFrame(int fd, struct timeval* shortTimeout)
 
 int teardownInitiation(int fd, struct timeval* shortTimeout, struct sockaddr_in* sourceAddr)
 {
+    printf("Teardownsequence initiated. \n");
     /*TODO Application close*/
 
     rtp* receivedFrame = NULL;
@@ -176,7 +177,6 @@ int teardownInitiation(int fd, struct timeval* shortTimeout, struct sockaddr_in*
     sendFrame(fd, frameToSend, *sourceAddr); /*send FIN*/
     printf("FIN sent \n");
     free(frameToSend);
-
 
     while(1)
     {
@@ -265,7 +265,7 @@ int teardownInitiation(int fd, struct timeval* shortTimeout, struct sockaddr_in*
                         }
                     }
                 }/*End of for-loop*/
-                if( (state==SIMULTANEOUS_CLOSE) || (state==AWAIT_FIN) )
+                if(state==SHORT_WAIT)
                 {
                     break;
                 }
@@ -290,8 +290,15 @@ int teardownInitiation(int fd, struct timeval* shortTimeout, struct sockaddr_in*
                         if(receivedFrame->flags == FIN)/*received expected packet FIN*/
                         {
                             printf("FIN received!\n");
-                            state = SHORT_WAIT;
+
                             free(receivedFrame);
+
+                            frameToSend = newFrame(ACK, 0, 0, 0);//create a ACK frame
+                            sendFrame(fd, frameToSend, *sourceAddr); /*send ACK*/
+                            printf("ACK sent \n");
+                            free(frameToSend);
+                            state = SHORT_WAIT;
+
                             break;
                         }
                         else /*received unexpected packet*/
@@ -315,14 +322,11 @@ int teardownInitiation(int fd, struct timeval* shortTimeout, struct sockaddr_in*
 
             case SHORT_WAIT:
             {
-                resetShortTimeout(shortTimeout);
-
-                if(waitForFrame(fd, shortTimeout) == 0)// short timeout, socket closed successfully
-                {
+                    sleep(200);
                     printf("Socket closed successfully \n");
                     state = CLOSED;
                     return state;
-                }
+
             }/*End of case SHORT_WAIT*/
         }/*End of switch*/
     }/*End of while*/
@@ -330,6 +334,7 @@ int teardownInitiation(int fd, struct timeval* shortTimeout, struct sockaddr_in*
 
 int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* sourceAddr)
 {
+    printf("Teardownsequence initiated. \n");
     /*TODO Application close*/
 
     rtp* receivedFrame = NULL;
@@ -343,7 +348,6 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
     printf("ACK sent \n");
     free(frameToSend);
 
-
     while(1)
     {
         switch(state)
@@ -356,7 +360,7 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
 
                     if(waitForFrame(fd, shortTimeout) == 0)// short timeout,
                     {
-                        if(applicationCloseDelay == 0)//give 2 seconds so application will get a chance to close
+                        if(applicationCloseDelay == 0)//give 1 second delay so application will get a chance to close
                         {
                             state = AWAIT_ACK;
                             break;
@@ -372,7 +376,7 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
                         {
                             printf("FIN received \n");
                             frameToSend = newFrame(ACK, 0, 0, 0);//create a ACK frame
-                            sendFrame(fd, frameToSend, *sourceAddr); /*send ACK*/
+                            sendFrame(fd, frameToSend, *sourceAddr); /*resend ACK*/
                             printf("ACK resent \n");
                             free(frameToSend);
                             break;
@@ -394,7 +398,7 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
                 state = CLOSED;
                 return state;
 
-            }/*End of case SIMULTANEOUS_CLOSE*/
+            }/*End of case AWAIT_CLOSE*/
 
             case AWAIT_ACK:
             {
@@ -444,7 +448,7 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
                 state = CLOSED;
                 return state;
 
-            }/*End of case AWAIT_FIN*/
+            }/*End of case AWAIT_ACK*/
         }/*End of switch*/
     }/*End of while*/
 

@@ -165,8 +165,11 @@ int main(int argc, char **argv)
 
                 while(1)
                 {
+                    FD_ZERO(&read_fd_set);/*clear set*/
+                    FD_SET(fd,&read_fd_set);/*put the fd in the set*/
+
                     /*Await client to send something, forevA*/
-                    select(1, &read_fd_set, NULL, NULL, NULL);
+                    select(fd + 1, &read_fd_set, NULL, NULL, NULL);
 
                     frame = receiveFrame(fd, &remaddr);
 
@@ -176,11 +179,6 @@ int main(int argc, char **argv)
                         free(frame);
                         break;
                     }
-                    else
-                    {
-                    printf("Incoming msg: %c \n", frame->data);
-                    free(frame);
-                    }
                 }
 
                 break;
@@ -188,6 +186,7 @@ int main(int argc, char **argv)
 
             case RESPOND_TEARDOWN:
             {
+                printf("Request to close socket received \n");
                 state = teardownResponse(fd, &shortTimeout, &remaddr);
 
                 break;
