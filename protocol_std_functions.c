@@ -108,7 +108,7 @@ int sendFrame(int socket, rtp* frame, struct sockaddr_in dest)
     int bytesSent = 0;
     //TODO: CRC
     serializeFrame(frame, buffer);
-    bytesSent = sendto(socket, buffer->data, sizeof(*buffer->data), 0, (struct sockaddr*)&dest, sizeof(dest));
+    bytesSent = sendto(socket, buffer->data, buffer->size, 0, (struct sockaddr*)&dest, sizeof(dest));
     free(buffer);
     return bytesSent;
 }
@@ -119,7 +119,7 @@ rtp* receiveFrame(int socket, struct sockaddr_in* sourceAddr)
     struct Buffer* buffer;/*help struct for serializing and deserializing*/
     socklen_t addrLen = sizeof(*sourceAddr);
     buffer = newBuffer();/*create helpbuffer for deserializing*/
-    recvfrom(socket, buffer->data, sizeof(*(buffer->data)), 0, (struct sockaddr*)sourceAddr, &addrLen);/*received serialized segment*/
+    recvfrom(socket, buffer->data, buffer->size, 0, (struct sockaddr*)sourceAddr, &addrLen);/*received serialized segment*/
     frame = newFrame(0, 0, 0, 0);/*create empty frame*/
     deserializeFrame(frame, buffer);/*Deserialize the received segment stored in buffer into the created frame*/
 

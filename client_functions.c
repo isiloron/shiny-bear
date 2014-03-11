@@ -37,14 +37,14 @@ int clientSlidingWindow(int sfd, struct sockaddr_in* servAddr)
         else
         {
             printf("Sending 'A'\n");
-            frameToSend = newFrame(ACK,0,0,'A');
+            frameToSend = newFrame(2,1,2,3);
             buffer = newBuffer();
             serializeFrame(frameToSend,buffer);
             buffer->next = 0;
             receivedFrame = newFrame(0,0,0,0);
             deserializeFrame(receivedFrame,buffer);
-            printf("%c\n",frameToSend->data);
-            printf("%c\n",receivedFrame->data);
+            printf("%d %d %d %d\n",frameToSend->flags,frameToSend->seq,frameToSend->crc,frameToSend->data);
+            printf("%d %d %d %d\n",receivedFrame->flags,receivedFrame->seq,receivedFrame->crc,receivedFrame->data);
             sendFrame(sfd, frameToSend, *servAddr);
             free(frameToSend);
         }
