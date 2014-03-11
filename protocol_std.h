@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <netdb.h>
+#include <pthread.h>
 
 #define PORT 5555
 #define MAXMSG 254 //char (-1 for '\0')

@@ -18,5 +18,6 @@
 
 int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* sourceAddr);
 
+void* readMessageFromClient(void* arg);
 
 #endif //SERVER_H

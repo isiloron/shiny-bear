@@ -28,8 +28,10 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
 
                     if(waitForFrame(fd, shortTimeout) == 0)// short timeout,
                     {
+                        printf("Wait for application to close. \n");
                         if(applicationCloseDelay == 0)//give 1 second delay so application will get a chance to close
                         {
+                            printf("application Closed. \n");
                             state = AWAIT_ACK;
                             break;
                         }
@@ -47,13 +49,11 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
                             sendFrame(fd, frameToSend, *sourceAddr); /*resend ACK*/
                             printf("ACK resent \n");
                             free(frameToSend);
-                            break;
                         }
                         else /*received unexpected packet*/
                         {
                             printf("Unexpected packet received: Throw away! \n");
                             free(receivedFrame);
-                            break;
                         }
                     }
                 }/*End of for-loop*/
@@ -80,7 +80,7 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
                         sendFrame(fd, frameToSend, *sourceAddr);
                         printf("FIN resent \n");
                         free(frameToSend);
-                        break;
+
                     }
                     else //frame to read
                     {
@@ -93,25 +93,26 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
                             sendFrame(fd, frameToSend, *sourceAddr);
                             printf("ACK resent \n");
                             free(frameToSend);
-                            break;
                         }
                         else if(receivedFrame->flags == ACK)/*received expected packet ACK*/
                         {
                             printf("ACK received!\n");
                             free(frameToSend);
                             state = CLOSED;
-                            printf("Socket closed successfully \n");
-                            return state;
+                            break;
                         }
                         else /*received unexpected packet*/
                         {
                             printf("Unexpected packet received: throw away! \n");
                             free(receivedFrame);
-                            break;
                         }
                     }
                 }/*End of for-loop*/
-
+                if(state==CLOSED)
+                {
+                    printf("Socket closed successfully \n");
+                    return state;
+                }
                 printf("Long timeout! Closing socket.\n");
                 state = CLOSED;
                 return state;
@@ -119,6 +120,11 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
             }/*End of case AWAIT_ACK*/
         }/*End of switch*/
     }/*End of while*/
+
+}
+
+void* readMessageFromClient(void* arg)
+{
 
 }
 
