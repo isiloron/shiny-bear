@@ -173,6 +173,7 @@ int main(int argc, char *argv[])
                     break;
                 }
                 printf("Long timeout! Closing socket.\n");
+                close(sfd);
                 state = CLOSED;
                 break;
 
@@ -189,6 +190,10 @@ int main(int argc, char *argv[])
                         if(receivedFrame->flags == FIN)/*received expected packet FIN*/
                         {
                             printf("FIN received!\n");
+                            frameToSend = newFrame(ACK, 0, 0, 0);//recreate a FIN frame
+                            sendFrame(sfd, frameToSend, servAddr); /*resend FIN*/
+                            printf("ACK sent!\n");
+                            free(frameToSend);
                             state = SHORT_WAIT;
                             free(receivedFrame);
                             break;
@@ -206,11 +211,13 @@ int main(int argc, char *argv[])
                     break;
                 }
                 printf("Long timeout! Closing socket.\n");
+                close(sfd);
                 state = CLOSED;
                 return state;
 
             case SHORT_WAIT:
-                sleep(200);
+                usleep(200000);
+                close(sfd);
                 state = CLOSED;
                 printf("Connection was torn down!\n");
                 break;
