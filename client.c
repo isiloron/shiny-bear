@@ -7,7 +7,6 @@
 #define PRECAUTION 2
 #define ESTABLISHED 3
 #define INIT_TEARDOWN 4
-#define RESP_TEARDOWN 5
 
 int main(int argc, char *argv[])
 {
@@ -116,14 +115,31 @@ int main(int argc, char *argv[])
             break;
         case ESTABLISHED:
             printf("ESTBLISHED STATE REACHED!\n");
-            state = clientSlidingWindow(sfd, servAddr);
+            //state = clientSlidingWindow(sfd, servAddr);
+            /*char message[50];
+            for(;;)
+            {
+                fgets(message,50,stdin);
+                message[50-1] = '\0';
+                if(strncmp(message,"quit\n",50)==0)
+                {*/
+                    frameToSend = newFrame(FIN,0,0,0);
+                    sendFrame(sfd, frameToSend, servAddr);
+                    sleep(500);
+                    sendFrame(sfd, frameToSend, servAddr);
+                    free(frameToSend);
+                    state = INIT_TEARDOWN;
+                    /*break;
+                }
+            }*/
             break;
         case INIT_TEARDOWN:
-            break;
-        case RESP_TEARDOWN:
+            printf("Teardown initiated.\n");
+            while(1);
             break;
         default:
             perror("Undefined state.");
+            exit(EXIT_FAILURE);
             break;
         }
     }
