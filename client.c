@@ -17,9 +17,6 @@ int main(int argc, char *argv[])
     struct sockaddr_in servAddr;
     rtp* frameToSend;
     rtp* receivedFrame;
-    //int winStartSeq = 0;
-    //int winEndSeq = 0;
-    //int bytesSent = 0;
     char hostName[hostNameLength];
     struct timeval shortTimeout;
     int numOfShortTimeouts = 0;
