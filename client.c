@@ -20,6 +20,8 @@ int main(int argc, char *argv[])
     char hostName[hostNameLength];
     struct timeval shortTimeout;
     int numOfShortTimeouts = 0;
+    int errorChance = 0;
+
 
     if(argv[1] == NULL)
     {
@@ -41,8 +43,8 @@ int main(int argc, char *argv[])
         {
             case CLOSED:
                 prepareSocket(&sfd, &myAddr);
-                frameToSend = newFrame(SYN,0,0,0);
-                sendFrame(sfd, frameToSend, servAddr);
+                frameToSend = newFrame(SYN,0,0);
+                sendFrame(sfd, frameToSend, servAddr, errorChance);
                 printf("Syn sent!\n");
                 free(frameToSend);
                 state = SYN_SENT;
@@ -54,8 +56,8 @@ int main(int argc, char *argv[])
                     resetShortTimeout(&shortTimeout);
                     if(waitForFrame(sfd, &shortTimeout) == 0) // short timeout
                     {
-                        frameToSend = newFrame(SYN,0,0,0);
-                        sendFrame(sfd, frameToSend, servAddr);
+                        frameToSend = newFrame(SYN,0,0);
+                        sendFrame(sfd, frameToSend, servAddr, errorChance);
                         free(frameToSend);
                         printf("Resent SYN.\n");
                     }
@@ -65,8 +67,8 @@ int main(int argc, char *argv[])
                         if(receivedFrame->flags == SYN+ACK)
                         {
                             printf("SYN+ACK received!\n");
-                            frameToSend = newFrame(ACK,0,0,0);
-                            sendFrame(sfd, frameToSend, servAddr);
+                            frameToSend = newFrame(ACK,0,0);
+                            sendFrame(sfd, frameToSend, servAddr, errorChance);
                             free(frameToSend);
                             free(receivedFrame);
                             state = PRECAUTION;
@@ -99,8 +101,8 @@ int main(int argc, char *argv[])
                         if(receivedFrame->flags == SYN+ACK)
                         {
                             printf("SYN+ACK received!\n");
-                            frameToSend = newFrame(ACK,0,0,0);
-                            sendFrame(sfd, frameToSend, servAddr);
+                            frameToSend = newFrame(ACK,0,0);
+                            sendFrame(sfd, frameToSend, servAddr, errorChance);
                             free(frameToSend);
                             printf("Resent ACK.\n");
                         }
@@ -118,10 +120,10 @@ int main(int argc, char *argv[])
 
             case ESTABLISHED:
                 printf("ESTABLISHED STATE REACHED!\n");
-                if(clientSlidingWindow(sfd, &servAddr) == 0)
+                if(clientSlidingWindow(sfd, &servAddr, errorChance) == 0)
                 {
-                    frameToSend = newFrame(FIN,0,0,0);
-                    sendFrame(sfd, frameToSend, servAddr);
+                    frameToSend = newFrame(FIN,0,0);
+                    sendFrame(sfd, frameToSend, servAddr, errorChance);
                     free(frameToSend);
                     state = FIN_SENT;
                 }
@@ -141,8 +143,8 @@ int main(int argc, char *argv[])
 
                     if(waitForFrame(sfd, &shortTimeout) == 0) // short timeout, Resend FIN
                     {
-                        frameToSend = newFrame(FIN, 0, 0, 0);//recreate a FIN frame
-                        sendFrame(sfd, frameToSend, servAddr); /*resend FIN*/
+                        frameToSend = newFrame(FIN,0,0);//recreate a FIN frame
+                        sendFrame(sfd, frameToSend, servAddr, errorChance); /*resend FIN*/
                         printf("FIN resent!\n");
                         free(frameToSend);
                     }
@@ -186,8 +188,8 @@ int main(int argc, char *argv[])
                         if(receivedFrame->flags == FIN)/*received expected packet FIN*/
                         {
                             printf("FIN received!\n");
-                            frameToSend = newFrame(ACK, 0, 0, 0);//recreate a FIN frame
-                            sendFrame(sfd, frameToSend, servAddr); /*resend FIN*/
+                            frameToSend = newFrame(ACK,0,0);//recreate a FIN frame
+                            sendFrame(sfd, frameToSend, servAddr, errorChance); /*resend FIN*/
                             printf("ACK sent!\n");
                             free(frameToSend);
                             state = SHORT_WAIT;

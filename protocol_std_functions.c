@@ -37,13 +37,12 @@ rtp* newFrame(int flags, int seq, char data)
     return frame;
 }
 
-#define INITIAL_SIZE 32
 struct Buffer* newBuffer()
 {
     struct Buffer* buf = malloc(sizeof(struct Buffer));
 
-    buf->data = malloc(INITIAL_SIZE);
-    buf->size = INITIAL_SIZE;
+    buf->data = malloc(BUFFERSIZE);
+    buf->size = BUFFERSIZE;
     buf->next = 0;
 
     return buf;
