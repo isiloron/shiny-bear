@@ -1,6 +1,6 @@
 #include "server.h"
 
-int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* sourceAddr)
+int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* sourceAddr, int chanceOfFrameError)
 {
     printf("Teardownsequence initiated. \n");
     /*TODO Application close*/
@@ -11,8 +11,8 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
     int applicationCloseDelay = 5;/* about 5 x 200ms = 1 sek delay*/
     int state = AWAIT_CLOSE;
 
-    frameToSend = newFrame(ACK, 0, 0, 0);//create a ACK frame
-    sendFrame(fd, frameToSend, *sourceAddr); /*send ACK*/
+    frameToSend = newFrame(ACK, 0, 0);//create a ACK frame
+    sendFrame(fd, frameToSend, *sourceAddr, chanceOfFrameError); /*send ACK*/
     printf("ACK sent \n");
     free(frameToSend);
 
@@ -44,8 +44,8 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
                         if(receivedFrame->flags == FIN)/*received expected packet FIN, resend ACK*/
                         {
                             printf("FIN received \n");
-                            frameToSend = newFrame(ACK, 0, 0, 0);//create a ACK frame
-                            sendFrame(fd, frameToSend, *sourceAddr); /*resend ACK*/
+                            frameToSend = newFrame(ACK, 0, 0);//create a ACK frame
+                            sendFrame(fd, frameToSend, *sourceAddr, chanceOfFrameError); /*resend ACK*/
                             printf("ACK resent \n");
                             free(frameToSend);
                         }
@@ -75,8 +75,8 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
 
                     if(waitForFrame(fd, shortTimeout) == 0) // short timeout, resend fin
                     {
-                        frameToSend = newFrame(FIN, 0, 0, 0);//create a FIN frame
-                        sendFrame(fd, frameToSend, *sourceAddr);
+                        frameToSend = newFrame(FIN, 0, 0);//create a FIN frame
+                        sendFrame(fd, frameToSend, *sourceAddr, chanceOfFrameError);
                         printf("FIN resent \n");
                         free(frameToSend);
 
@@ -88,8 +88,8 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
                         if(receivedFrame->flags == FIN)/*received expected packet FIN*/
                         {
                             printf("FIN received!\n");
-                            frameToSend = newFrame(ACK, 0, 0, 0);//create a ACK frame
-                            sendFrame(fd, frameToSend, *sourceAddr);
+                            frameToSend = newFrame(ACK, 0, 0);//create a ACK frame
+                            sendFrame(fd, frameToSend, *sourceAddr, chanceOfFrameError);
                             printf("ACK resent \n");
                             free(frameToSend);
                         }

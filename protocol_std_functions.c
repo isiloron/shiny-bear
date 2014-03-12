@@ -18,21 +18,20 @@ void prepareSocket(int* sock_fd, struct sockaddr_in* sockaddr)
         perror("Bind failed");
         exit(EXIT_FAILURE);
     }
-    printf("Socket prepared!\n");
+    printf("Socket prepared \n");
 }
 
-rtp* newFrame(int flags, int seq, int crc, char data)
+rtp* newFrame(int flags, int seq, char data)
 {
     rtp* frame = malloc(sizeof(rtp));
     if(frame==NULL)
     {
-        perror("Failed to create frame!\n");
+        perror("Failed to create frame \n");
         return NULL;
     }
 
     frame->flags = flags;
     frame->seq = seq;
-    frame->crc = crc;
     frame->data = data;
 
     return frame;
@@ -65,7 +64,6 @@ void serializeFrame(rtp* frame, struct Buffer* buf)
     serializeInt(frame->flags,buf);
     serializeInt(frame->seq,buf);
     serializeChar(frame->data,buf);
-    serializeInt(frame->crc,buf);
 }
 
 void serializeInt(int n, struct Buffer* buf)
@@ -87,7 +85,6 @@ void deserializeFrame(rtp* frame, struct Buffer* buf)
     deserializeInt(&(frame->flags),buf);
     deserializeInt(&(frame->seq),buf);
     deserializeChar(&(frame->data),buf);
-    deserializeInt(&(frame->crc),buf);
 }
 
 void deserializeInt(int* n, struct Buffer* buf)
@@ -102,12 +99,28 @@ void deserializeChar(char* c, struct Buffer* buf)
     buf->next += sizeof(char);
 }
 
-int sendFrame(int socket, rtp* frame, struct sockaddr_in dest)
+int sendFrame(int socket, rtp* frame, struct sockaddr_in dest, int chanceOfFrameError)
 {
+    /*
+    if(generateError(chanceOfFrameError) == 1)
+    {
+        printf("Frame dissapear \n");
+    }
+    else if(generateError(chanceOfFrameError) == 2)
+    {
+        printf("CRC error \n");
+    }
+    else
+    {
+        printf("Frame ok \n");
+    }
+    */
+
     struct Buffer* buffer = newBuffer();
     int bytesSent = 0;
     //TODO: CRC
     serializeFrame(frame, buffer);
+
     bytesSent = sendto(socket, buffer->data, buffer->size, 0, (struct sockaddr*)&dest, sizeof(dest));
     free(buffer);
     return bytesSent;
@@ -120,7 +133,7 @@ rtp* receiveFrame(int socket, struct sockaddr_in* sourceAddr)
     socklen_t addrLen = sizeof(*sourceAddr);
     buffer = newBuffer();/*create helpbuffer for deserializing*/
     recvfrom(socket, buffer->data, buffer->size, 0, (struct sockaddr*)sourceAddr, &addrLen);/*received serialized segment*/
-    frame = newFrame(0, 0, 0, 0);/*create empty frame*/
+    frame = newFrame(0, 0, 0);/*create empty frame*/
     deserializeFrame(frame, buffer);/*Deserialize the received segment stored in buffer into the created frame*/
 
     //TODO: CRC
@@ -164,4 +177,37 @@ void checkCrc(rtp* frame)
 {
 
 }
+
+int getFrameErrorPercentage()
+{
+    char buffer[10];
+    int percentage;
+
+    printf("Enter the probability, in percentage (0-100), that a frame will be lost: ");
+    fgets(buffer, 10, stdin);
+    percentage = atoi(buffer);
+
+    if(percentage < 0)
+        percentage = 0;
+    if(percentage > 100)
+        percentage = 100;
+
+    printf("Errorpercentage %d \n", percentage);
+    return percentage;
+}
+
+int generateError(int chanceOfFrameError)
+{
+    int error = (rand() % 101);
+
+    if(error <= chanceOfFrameError)/*frame will get error*/
+    {
+        return (rand() % 2);
+    }
+    else/*frame will be ok*/
+    {
+        return 0;
+    }
+}
+
 

@@ -11,6 +11,8 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <pthread.h>
+#include <time.h>
+#include <stdbool.h>
 
 #define PORT 5555
 #define MAXMSG 254 //char (-1 for '\0')
@@ -30,7 +32,6 @@ typedef struct rtp_struct
 {
     int flags;
     int seq; //sequence number (frame number)
-    int crc; //crc error check code
     char data; //one character at a time, if flag is INF then the char value is the number of characters in the complete message.
 } rtp;
 
@@ -42,7 +43,7 @@ struct Buffer
 };
 
 void prepareSocket(int* sock_fd, struct sockaddr_in* sockaddr);
-rtp* newFrame(int flags, int seq, int crc, char data);
+rtp* newFrame(int flags, int seq, char data);
 struct Buffer* newBuffer();
 void reserveSpace(struct Buffer* buf, size_t bytes);
 void serializeFrame(rtp* frame, struct Buffer* buf);
@@ -51,11 +52,12 @@ void serializeChar(char c, struct Buffer* buf);
 void deserializeFrame(rtp* frame, struct Buffer* buf);
 void deserializeInt(int* n, struct Buffer* buf);
 void deserializeChar(char* c, struct Buffer* buf);
-int sendFrame(int socket, rtp* frame, struct sockaddr_in dest);
+int sendFrame(int socket, rtp* frame, struct sockaddr_in dest, int chanceOfFrameError);
 rtp* receiveFrame(int socket, struct sockaddr_in* sourceAddr);
 void resetShortTimeout(struct timeval* shortTimeout);
 int waitForFrame(int fd, struct timeval* shortTimeout);
-
+int getFrameErrorPercentage();
+int generateError(int chanceOfFrameError);
 
 
 #endif //PROTOCOL_STD_H

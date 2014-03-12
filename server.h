@@ -17,8 +17,7 @@
 #define AWAIT_CLOSE 9
 #define AWAIT_ACK 10
 
-int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* sourceAddr);
+int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* sourceAddr, int chanceOfFrameError);
 
-void* readMessageFromClient(void* arg);
 
 #endif //SERVER_H
