@@ -1,6 +1,6 @@
 #include "server.h"
 #include "protocol_std.h"
-/*frame is not a reasonable name, cuz it is not a frame! Rename it to "frame" or something like that:P*/
+
 int main(int argc, char **argv)
 {
 
@@ -17,9 +17,12 @@ int main(int argc, char **argv)
     int frameCountdown = 0;
     int expectedSeqence = 0;
 
-    struct timeval shortTimeout;
+    struct timeval shortTimeout1;
+    struct timeval shortTimeout2;
     int numOfshortTimeouts = 1; /*iteration konstant for tiemouts*/
     int chanceOfFrameError = 0;
+    bool dataIsComplete = false;
+    bool dataToReceive = false;
     rtp* frame = NULL;
 
     system("clear");
@@ -49,12 +52,12 @@ int main(int argc, char **argv)
                 /*the for-loop represents a long time out, and one iteration represent a short time out*/
                 for(numOfshortTimeouts=0; numOfshortTimeouts<longTimeOut; numOfshortTimeouts++)
                 {
-                    resetShortTimeout(&shortTimeout);
+                    resetShortTimeout(&shortTimeout1);
 
                     FD_ZERO(&read_fd_set);/*clear set*/
                     FD_SET(fd,&read_fd_set);/*put the fd in the set for reading*/
 
-                    returnval = select(fd + 1, &read_fd_set, NULL, NULL, &shortTimeout);/*wait for something to be read on the filedescriptor in the set*/
+                    returnval = select(fd + 1, &read_fd_set, NULL, NULL, &shortTimeout1);/*wait for something to be read on the filedescriptor in the set*/
 
                     if(returnval == -1)/*ERROR*/
                     {
@@ -114,13 +117,13 @@ int main(int argc, char **argv)
                 /*the for-loop represents a long time out, and one iteration represent a short time out*/
                 for(numOfshortTimeouts=0; numOfshortTimeouts<longTimeOut; numOfshortTimeouts++)
                 {
-                    resetShortTimeout(&shortTimeout);
+                    resetShortTimeout(&shortTimeout1);
 
                     FD_ZERO(&read_fd_set);/*clear set*/
                     FD_SET(fd,&read_fd_set);/*put the fd in the set*/
 
                     /*wait for something to be read on the filedescriptor in the set*/
-                    returnval = select(fd + 1, &read_fd_set, NULL, NULL, &shortTimeout);
+                    returnval = select(fd + 1, &read_fd_set, NULL, NULL, &shortTimeout1);
 
                     if(returnval == -1)/*ERROR*/
                     {
@@ -166,108 +169,159 @@ int main(int argc, char **argv)
                     printf("Long timeout. Reset connection setup \n");
                     state = CLOSED;
                 }
+                else
+                {
+                    printf("Connection established \n");
+                    expectedSeqence = 0;
+                }
+
                 break;
 
             }/*End of CASE SYN_RECEIVED*/
 
             case ESTABLISHED:
             {
-                printf("Connection established \n");
-                expectedSeqence = 0;
+                printf("Awaiting new message... \n");
 
-                while(1)
+                dataToReceive == false;
+                dataIsComplete ==false;
+
+                for(numOfshortTimeouts=0; numOfshortTimeouts<longTimeOut; numOfshortTimeouts++)
                 {
-                    printf("Awaiting INF seq: %d \n",expectedSeqence);
+                    printf("Seq: %d expected \n",expectedSeqence);
+
+                    resetShortTimeout(&shortTimeout1);
 
                     FD_ZERO(&read_fd_set);/*clear set*/
                     FD_SET(fd,&read_fd_set);/*put the fd in the set*/
 
                     /*Await client to send something*/
-                    select(fd + 1, &read_fd_set, NULL, NULL, NULL);
+                    returnval = select(fd + 1, &read_fd_set, NULL, NULL, &shortTimeout1);
 
-                    frame = receiveFrame(fd, &remaddr);
-
-                    if(frame->flags == FIN)/*receive request to teardown connection*/
+                    if(returnval == -1)/*ERROR*/
                     {
-                        state = RESPOND_TEARDOWN;
-                        free(frame);
-                        break;
+                        perror("Select failed \n");
+                        exit(0);
                     }
-                    else if( (frame->flags == INF) && (frame->seq == expectedSeqence) )/*receive info on next msglength */
+                    else if(returnval == 0)/*short timeout, no request to connect received*/
                     {
-                        printf("INF received, with seq %d \n",frame->seq);
 
-                        frameCountdown = frame->data;
-                        free(frame);
+                    }
+                    else/*we got something to read*/
+                    {
+                        frame = receiveFrame(fd, &remaddr);
 
-                        /*Send ACK on corresponding frame sequence*/
-                        frame = newFrame(ACK, expectedSeqence, 0);//create ACK
-                        sendFrame(fd, frame, remaddr, chanceOfFrameError); /*send ACK*/
-                        printf("Sent ACK on seq: %d \n", expectedSeqence);
-                        free(frame);
-
-                        expectedSeqence = ((expectedSeqence + 1) % MAXSEQ);
-
-                        int strInd = 0;
-                        while(1)/*receive untill complete msg*/
+                        if(frame->flags == FIN)/*receive request to teardown connection*/
                         {
+                            state = RESPOND_TEARDOWN;
+                            free(frame);
+                            break;
+                        }
+                        else if( (frame->flags == INF) && (frame->seq == expectedSeqence) )/*receive info on next msglength */
+                        {
+                            printf("INF received, with seq %d \n",frame->seq);
+                            dataToReceive == true;
 
-                            FD_ZERO(&read_fd_set);/*clear set*/
-                            FD_SET(fd,&read_fd_set);/*put the fd in the set*/
+                            frameCountdown = frame->data;
+                            free(frame);
 
-                            /*Await client to send something*/
-                            select(fd + 1, &read_fd_set, NULL, NULL, NULL);
+                            /*Send ACK on corresponding frame sequence*/
+                            frame = newFrame(ACK, expectedSeqence, 0);//create ACK
+                            sendFrame(fd, frame, remaddr, chanceOfFrameError); /*send ACK*/
+                            printf("Sent ACK on seq: %d \n", expectedSeqence);
+                            free(frame);
 
-                            frame = receiveFrame(fd, &remaddr);
+                            expectedSeqence = ((expectedSeqence + 1) % MAXSEQ);
 
-                            if((frame->flags == ACK) &&
-                               (frame->seq == expectedSeqence) &&
-                               (frameCountdown != 1) )/*received next expected frame */
+                            int strInd = 0;
+
+                            for(numOfshortTimeouts=0; numOfshortTimeouts<longTimeOut; numOfshortTimeouts++)/*receive msg until completion*/
                             {
-                                /*put char in msgbuffer*/
-                                msgBuffer[strInd] = frame->data;
-                                strInd++;
-                                frameCountdown--;
-                                free(frame);
+                                resetShortTimeout(&shortTimeout2);
 
-                                /*Send ACK on corresponding sequence*/
-                                frame = newFrame(ACK, expectedSeqence, 0);//create ACK
-                                sendFrame(fd, frame, remaddr, chanceOfFrameError); /*resend ACK*/
-                                printf("Sent ACK on seq: %d \n", expectedSeqence);
-                                expectedSeqence = ((expectedSeqence + 1) % MAXSEQ);
-                                free(frame);
-                            }
-                            else if(frameCountdown == 1)/*last frame to read, data is complete, print msg from msgbuffer to screen*/
+                                FD_ZERO(&read_fd_set);/*clear set*/
+                                FD_SET(fd,&read_fd_set);/*put the fd in the set*/
+
+                                /*Await client to send something*/
+                                returnval = select(fd + 1, &read_fd_set, NULL, NULL, &shortTimeout2);
+
+                                if(returnval == -1)/*ERROR*/
+                                {
+                                    perror("Select failed \n");
+                                    exit(0);
+                                }
+                                else if(returnval == 0){}/*short timeout, no frame received*/
+                                else/*we got something to read*/
+                                {
+                                    frame = receiveFrame(fd, &remaddr);
+
+                                    if((frame->flags == ACK) &&
+                                       (frame->seq == expectedSeqence) &&
+                                       (frameCountdown != 1) )/*received next expected frame */
+                                    {
+                                        /*put char in msgbuffer*/
+                                        msgBuffer[strInd] = frame->data;
+                                        strInd++;
+                                        frameCountdown--;
+                                        free(frame);
+
+                                        /*Send ACK on corresponding sequence*/
+                                        frame = newFrame(ACK, expectedSeqence, 0);//create ACK
+                                        sendFrame(fd, frame, remaddr, chanceOfFrameError); /*resend ACK*/
+                                        printf("Sent ACK on seq: %d \n", expectedSeqence);
+                                        expectedSeqence = ((expectedSeqence + 1) % MAXSEQ);
+                                        free(frame);
+                                    }
+                                    else if(frameCountdown == 1)/*last frame to read, data is complete, print msg from msgbuffer to screen*/
+                                    {
+                                        printf("Received msg: ");
+
+                                        msgBuffer[strInd] = frame->data;
+
+                                        printf("%s",msgBuffer);
+
+                                        free(frame);
+                                        strInd = 0;
+                                        expectedSeqence = ((expectedSeqence + 1) % MAXSEQ);
+                                        dataIsComplete ==true;
+                                        break;
+                                    }
+                                    else/*received unexpected frame, throw away*/
+                                    {
+                                        printf("Unexpected frame received. Throw away seq: %d\n",frame->seq);
+                                        free(frame);
+                                    }
+                                }/*End of got ACK frames to read*/
+                            }/*End of for-loop send until message completion*/
+
+                            if(dataIsComplete == false)
                             {
-                                printf("Received msg: ");
-
-                                msgBuffer[strInd] = frame->data;
-
-                                printf("%s",msgBuffer);
-
-                                free(frame);
-                                strInd = 0;
-                                expectedSeqence = ((expectedSeqence + 1) % MAXSEQ);
+                                printf("Long timeout. Msg was not received completely. Reset connection setup \n");
+                                state = CLOSED;
                                 break;
                             }
-                            else/*received unexpected frame, throw away*/
-                            {
-                                printf("Unexpected frame received. Throw away. Seq: %d\n",frame->seq);
-                                free(frame);
-                            }
-                        }/*End of while-loop*/
+                        }/*End of recieved info-frame*/
+                    }/*End of got INF frame to read*/
+                }/*End of for-loop*/
 
-                    }/*End of recieved info-frame*/
+                if(dataToReceive ==false)
+                {
+                    printf("Long timeout. No msg at all received. Reset connection setup \n");
+                    state = CLOSED;
+                    break;
+                }
+                else/*msg complete. Listen for new msg*/
+                {
+                    state = ESTABLISHED;
+                    break;
+                }
 
-                }/*End of while-loop*/
-
-                break;
             }/*End of CASE ESTABLISHED*/
 
             case RESPOND_TEARDOWN:
             {
                 printf("Request to close socket received \n");
-                state = teardownResponse(fd, &shortTimeout, &remaddr, chanceOfFrameError);
+                state = teardownResponse(fd, &shortTimeout1, &remaddr, chanceOfFrameError);
 
                 break;
             }/*End of CASE RESPOND_TEARDOWN*/
