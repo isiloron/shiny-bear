@@ -19,30 +19,72 @@ void prepareHostAddr(struct sockaddr_in* servAddr, char* hostName, int port)
     printf("Host Address prepared!\n");
 }
 
+
+struct WindowStruct
+{
+    int sfd;
+    struct sockaddr_in servAddr;
+    rtp* frameSeq[MAXSEQ];
+    int startSeq;
+    int endSeq; // is one greater than the last seq sent, equal to startSeq if no frames has been sent, endSeq-startSeq = number of frames sent
+};
+
 int clientSlidingWindow(int sfd, struct sockaddr_in* servAddr)
 {
-    rtp* frameToSend;
-    //rtp* receivedFrame;
     char messageString[MAXMSG];
-    /*struct Buffer* buffer;
+    struct Buffer* buffer;
     struct timeval shortTimeout;
     int numOfShortTimeouts = 0;
-
-    struct WindowStruct
-    {
-        rtp* frameSeq[MAXSEQ];
-        int startSeq;
-        int endSeq;
-    };
+    pthread_t inputThread;
 
     struct WindowStruct window;
+    window.sfd = sfd;
+    window.servAddr = *servAddr;
     window.startSeq = 0;
-    window.endSeq = 0;*/
+    window.endSeq = 0;
 
-    //tråd som tar in ett meddelande från användaren och skickar iväg frames
+    ///tråd som tar in ett meddelande från användaren och skickar iväg frames
+    if(pthread_create(&inputThread, NULL, &inputThreadFunction, &window) != 0)
+    {
+        perror("Could not create thread!");
+        exit(EXIT_FAILURE);
+    }
 
-    //select loop med timeout som läser ackar.
+    rtp* receivedFrame = NULL;
 
+    for(numOfShortTimeouts=0; numOfShortTimeouts<longTimeOut; numOfShortTimeouts++)
+    {
+        resetShortTimeout(&shortTimeout);
+        if(waitForFrame(sfd, &shortTimeout) == 1) //something to read
+        {
+            ///läser ackar
+            receivedFrame = receiveFrame(sfd,servAddr);
+
+            if(receivedFrame->flags == ACK //it is an ACK
+               && receivedFrame->seq >= window.startSeq // it is the expected ack or greater
+               && receivedFrame->seq < window.endSeq)// the sequence is less than the last seq sent+1
+            {
+                printf("ACK received! Seq: %d\n",receivedFrame->seq);
+                window.startSeq = receivedFrame->seq+1;
+                free(receivedFrame);
+            }
+            else /*received unexpected packet*/
+            {
+                printf("Unexpected packet received! \n");
+                free(receivedFrame);
+            }
+        }
+        else if(pthread_tryjoin_np(inputThread,NULL)==0) //input thread has closed i.e. it is time to tear down
+        {
+            return 0;
+        }
+
+    }
+
+    /// long timeout, stäng av lästråden och returnera 1
+
+
+    /**
     int seq = 0;
     while(1)
     {
@@ -72,7 +114,7 @@ int clientSlidingWindow(int sfd, struct sockaddr_in* servAddr)
             seq=(seq+1)%MAXSEQ;
             free(frameToSend);
 
-            /*
+
             printf("Sending 'A'\n");
             frameToSend = newFrame(ACK,10,-7,messageString[0]);
             buffer = newBuffer();
@@ -84,7 +126,13 @@ int clientSlidingWindow(int sfd, struct sockaddr_in* servAddr)
             printf("%d %d %d %c\n",receivedFrame->flags,receivedFrame->seq,receivedFrame->crc,receivedFrame->data);
             sendFrame(sfd, frameToSend, *servAddr);
             free(frameToSend);
-            */
+
         }
-    }
+    }*/
+}
+
+void* inputThreadFunction(void *arg)
+{
+
+    return 0;
 }
