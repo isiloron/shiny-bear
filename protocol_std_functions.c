@@ -171,6 +171,7 @@ int waitForFrame(int fd, struct timeval* shortTimeout)
 void setCrc(int* crc, rtp* frame)
 {
 
+
 }
 
 void checkCrc(rtp* frame)
@@ -183,7 +184,7 @@ int getFrameErrorPercentage()
     char buffer[10];
     int percentage;
 
-    printf("Enter the probability, in percentage (0-100), that a frame will be lost: ");
+    printf("Enter the probability, in percentage (0-100), that a frame will be currupted/lost: ");
     fgets(buffer, 10, stdin);
     percentage = atoi(buffer);
 

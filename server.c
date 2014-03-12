@@ -22,6 +22,7 @@ int main(int argc, char **argv)
     int chanceOfFrameError = 0;
     rtp* frame = NULL;
 
+    system("clear");
 
     while(1)/*for now press Ctr + 'c' to exit program*/
     {
@@ -205,7 +206,7 @@ int main(int argc, char **argv)
                         printf("Sent ACK on seq: %d \n", expectedSeqence);
                         free(frame);
 
-                        expectedSeqence = ((expectedSeqence + 1) % 16);
+                        expectedSeqence = ((expectedSeqence + 1) % MAXSEQ);
 
                         int strInd = 0;
                         while(1)/*receive untill complete msg*/
@@ -233,7 +234,7 @@ int main(int argc, char **argv)
                                 frame = newFrame(ACK, expectedSeqence, 0);//create ACK
                                 sendFrame(fd, frame, remaddr, chanceOfFrameError); /*resend ACK*/
                                 printf("Sent ACK on seq: %d \n", expectedSeqence);
-                                expectedSeqence = ((expectedSeqence + 1) % 16);
+                                expectedSeqence = ((expectedSeqence + 1) % MAXSEQ);
                                 free(frame);
                             }
                             else if(frameCountdown == 0)/*data is complete, print msg from msgbuffer to screen*/
@@ -246,7 +247,7 @@ int main(int argc, char **argv)
 
                                 free(frame);
                                 strInd = 0;
-                                expectedSeqence = ((expectedSeqence + 1) % 16);
+                                expectedSeqence = ((expectedSeqence + 1) % MAXSEQ);
                                 break;
                             }
                             else/*received unexpected frame, throw away*/
