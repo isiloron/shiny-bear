@@ -222,7 +222,7 @@ int main(int argc, char **argv)
 
                             if((frame->flags == ACK) &&
                                (frame->seq == expectedSeqence) &&
-                               (frameCountdown != 0) )/*received next expected frame */
+                               (frameCountdown != 1) )/*received next expected frame */
                             {
                                 /*put char in msgbuffer*/
                                 msgBuffer[strInd] = frame->data;
@@ -237,7 +237,7 @@ int main(int argc, char **argv)
                                 expectedSeqence = ((expectedSeqence + 1) % MAXSEQ);
                                 free(frame);
                             }
-                            else if(frameCountdown == 0)/*data is complete, print msg from msgbuffer to screen*/
+                            else if(frameCountdown == 1)/*last frame to read, data is complete, print msg from msgbuffer to screen*/
                             {
                                 printf("Received msg: ");
 

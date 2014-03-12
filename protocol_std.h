@@ -1,6 +1,7 @@
 #ifndef PROTOCOL_STD_H
 #define PROTOCOL_STD_H
 
+//Libraries
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <stdlib.h>
@@ -14,8 +15,16 @@
 #include <time.h>
 #include <stdbool.h>
 
+//Socket
 #define PORT 5555
+
+//Message
 #define MAXMSG 254 //char (-1 for '\0')
+
+//Frame
+#define BUFFERSIZE 16 //size of buffer to send over UDP
+
+//Sliding window
 #define MAXSEQ 16
 #define WINDSIZE 8
 
@@ -42,8 +51,12 @@ struct Buffer
     size_t size;
 };
 
+//Socket functions
 void prepareSocket(int* sock_fd, struct sockaddr_in* sockaddr);
+
+//Frames
 rtp* newFrame(int flags, int seq, char data);
+
 struct Buffer* newBuffer();
 void reserveSpace(struct Buffer* buf, size_t bytes);
 void serializeFrame(rtp* frame, struct Buffer* buf);
