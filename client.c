@@ -84,6 +84,7 @@ int main(int argc, char *argv[])
                         if(receivedFrame->flags == SYN+ACK)
                         {
                             printf("SYN+ACK received!\n");
+                            printf("Sending ACK!\n");
                             frameToSend = newFrame(ACK,0,0);
                             sendFrame(sfd, frameToSend, servAddr, errorChance);
                             free(frameToSend);
