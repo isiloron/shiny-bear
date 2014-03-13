@@ -181,15 +181,13 @@ int main(int argc, char **argv)
 
             case ESTABLISHED:
             {
-                printf("Awaiting new message... \n");
+                printf("Awaiting new INF on seq: %d \n",expectedSeqence );
 
                 dataToReceive = false;
                 dataIsComplete = false;
 
                 for(numOfshortTimeouts=0; numOfshortTimeouts<longTimeOut; numOfshortTimeouts++)
                 {
-                    printf("Seq: %d expected \n",expectedSeqence);
-
                     resetShortTimeout(&shortTimeout1);
 
                     FD_ZERO(&read_fd_set);/*clear set*/
@@ -259,6 +257,7 @@ int main(int argc, char **argv)
                                        (frame->seq == expectedSeqence) &&
                                        (frameCountdown != 1) )/*received next expected frame */
                                     {
+                                        printf("Expected data-frame received with seq %d", frame->seq);
                                         /*put char in msgbuffer*/
                                         msgBuffer[strInd] = frame->data;
                                         strInd++;
@@ -267,7 +266,7 @@ int main(int argc, char **argv)
 
                                         /*Send ACK on corresponding sequence*/
                                         frame = newFrame(ACK, expectedSeqence, 0);//create ACK
-                                        sendFrame(fd, frame, remaddr, chanceOfFrameError); /*resend ACK*/
+                                        sendFrame(fd, frame, remaddr, chanceOfFrameError); /*send ACK*/
                                         printf("Sent ACK on seq: %d \n", expectedSeqence);
                                         expectedSeqence = ((expectedSeqence + 1) % MAXSEQ);
                                         free(frame);
@@ -281,6 +280,13 @@ int main(int argc, char **argv)
                                         printf("%s",msgBuffer);
 
                                         free(frame);
+
+                                        /*Send ACK on corresponding sequence*/
+                                        frame = newFrame(ACK, expectedSeqence, 0);//create ACK
+                                        sendFrame(fd, frame, remaddr, chanceOfFrameError); /*send ACK*/
+                                        printf("Sent ACK on seq: %d \n", expectedSeqence);
+                                        free(frame);
+
                                         strInd = 0;
                                         expectedSeqence = ((expectedSeqence + 1) % MAXSEQ);
                                         dataIsComplete =true;
@@ -288,7 +294,7 @@ int main(int argc, char **argv)
                                     }
                                     else/*received unexpected frame, throw away*/
                                     {
-                                        printf("Unexpected frame received. Throw away seq: %d\n",frame->seq);
+                                        printf("Unexpected frame received. Throw away seq: %d \n",frame->seq);
                                         free(frame);
                                     }
                                 }/*End of got ACK frames to read*/
