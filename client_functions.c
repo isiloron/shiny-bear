@@ -90,6 +90,7 @@ int clientSlidingWindow(int sfd, struct sockaddr_in* servAddr, int errorChance)
 
 void* inputThreadFunction(void *arg)
 {
+    srand(time(0));
     struct windowStruct *window = (struct windowStruct *)arg;
     char messageString[MAXMSG];
     while(1)

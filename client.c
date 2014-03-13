@@ -12,7 +12,7 @@
 
 int main(int argc, char *argv[])
 {
-    srand(time(NULL));
+    srand(time(0));
 
     int sfd;
     struct sockaddr_in myAddr;

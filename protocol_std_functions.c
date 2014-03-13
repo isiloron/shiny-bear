@@ -224,7 +224,7 @@ int generateError(int chanceOfFrameError)
 
     if(error <= chanceOfFrameError)/*frame will get error*/
     {
-        return (rand() % 1); //change to 2 when buffer curruption is working
+        return 1; //change to (rand() % 2)+1 when buffer curruption is working
     }
     else/*frame will be ok*/
     {
