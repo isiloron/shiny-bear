@@ -231,9 +231,9 @@ int getFrameErrorPercentage()
 
 int generateError(int chanceOfFrameError)
 {
-    int error = (rand() % 101);
+    int error = (rand() % 100)+1;
 
-    if(error <= chanceOfFrameError)/*frame will get error*/
+    if(error <= chanceOfFrameError)/*if true; frame will get error*/
     {
         return (rand() % 2);
     }
