@@ -30,8 +30,8 @@ rtp* newFrame(int flags, int seq, char data)
         return NULL;
     }
 
-    frame->flags = (uint8_t)flags;
-    frame->seq = (uint8_t)seq;
+    frame->flags = flags;
+    frame->seq = seq;
     frame->data = data;
 
     return frame;
@@ -50,15 +50,15 @@ struct Buffer* newBuffer()
 
 void serializeFrame(rtp* frame, struct Buffer* buf)
 {
-    serialize_uint8(frame->flags,buf);
-    serialize_uint8(frame->seq,buf);
+    serialize_int(frame->flags,buf);
+    serialize_int(frame->seq,buf);
     serialize_char(frame->data,buf);
 }
 
-void serialize_uint8(uint8_t n, struct Buffer* buf)
+void serialize_int(int n, struct Buffer* buf)
 {
-    memcpy( ((char *)buf->data)+(buf->next), &n, sizeof(uint8_t));
-    buf->next += sizeof(uint8_t);
+    memcpy( ((char *)buf->data)+(buf->next), &n, sizeof(int));
+    buf->next += sizeof(int);
 }
 
 void serialize_char(char c, struct Buffer* buf)
@@ -69,15 +69,15 @@ void serialize_char(char c, struct Buffer* buf)
 
 void deserializeFrame(rtp* frame, struct Buffer* buf)
 {
-    deserialize_uint8(&(frame->flags),buf);
-    deserialize_uint8(&(frame->seq),buf);
+    deserialize_int(&(frame->flags),buf);
+    deserialize_int(&(frame->seq),buf);
     deserialize_char(&(frame->data),buf);
 }
 
-void deserialize_uint8(uint8_t* n, struct Buffer* buf)
+void deserialize_int(int* n, struct Buffer* buf)
 {
-    memcpy(n,((char*)buf->data)+(buf->next), sizeof(uint8_t));
-    buf->next += sizeof(uint8_t);
+    memcpy(n,((char*)buf->data)+(buf->next), sizeof(int));
+    buf->next += sizeof(int);
 }
 
 void deserialize_char(char* c, struct Buffer* buf)

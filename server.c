@@ -58,7 +58,7 @@ int main(int argc, char **argv)
                     if(returnval == -1)/*ERROR*/
                     {
                         printf("Select failed\n");
-                        exit(0);
+                        exit(EXIT_FAILURE);
                     }
                     else if(returnval == 0){}/*short timeout, no request to connect received*/
                     else/*there is something to read on the filedescriptor*/
