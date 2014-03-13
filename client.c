@@ -42,6 +42,7 @@ int main(int argc, char *argv[])
         switch(state)
         {
             case CLOSED:
+                printf("Entered CLOSED state!\n");
                 prepareSocket(&sfd, &myAddr);
                 frameToSend = newFrame(SYN,0,0);
                 sendFrame(sfd, frameToSend, servAddr, errorChance);
@@ -51,6 +52,7 @@ int main(int argc, char *argv[])
                 break;
 
             case SYN_SENT:
+                printf("Entered SYN_SENT state!\n");
                 for(numOfShortTimeouts=0; numOfShortTimeouts<longTimeOut; numOfShortTimeouts++)
                 {
                     resetShortTimeout(&shortTimeout);
@@ -87,6 +89,7 @@ int main(int argc, char *argv[])
                 break;
 
             case PRECAUTION:
+                printf("Entered PRECAUTION state!\n");
                 for(numOfShortTimeouts=0; numOfShortTimeouts<longTimeOut; numOfShortTimeouts++)
                 {
                     resetShortTimeout(&shortTimeout);
@@ -119,7 +122,7 @@ int main(int argc, char *argv[])
                 break;
 
             case ESTABLISHED:
-                printf("ESTABLISHED STATE REACHED!\n");
+                printf("Entered ESTABLISHED state!\n");
                 if(clientSlidingWindow(sfd, &servAddr, errorChance) == 0)
                 {
                     frameToSend = newFrame(FIN,0,0);
