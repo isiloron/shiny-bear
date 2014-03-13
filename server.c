@@ -128,7 +128,16 @@ int main(int argc, char **argv)
                         perror("Select failed \n");
                         exit(0);
                     }
-                    else if(returnval == 0){}/*short timeout, no request to connect received*/
+                    else if(returnval == 0)/*short timeout, no ack received, resend syn-ack*/
+                    {
+                        frame = newFrame(SYN+ACK, 0, 0);//create a SYN+ACK frame
+
+                        sendFrame(fd, frame, remaddr, chanceOfFrameError);
+
+                        printf("Resent SYN+ACK \n");
+
+                        free(frame);
+                    }
                     else/*we got something to read*/
                     {
                         frame = receiveFrame(fd, &remaddr);
@@ -179,8 +188,6 @@ int main(int argc, char **argv)
 
             case ESTABLISHED:
             {
-                printf("Listening for new INF on seq: %d \n",expectedSeqence );
-
                 dataToReceive = false;
                 dataIsComplete = false;
 
@@ -201,7 +208,6 @@ int main(int argc, char **argv)
                     }
                     else if(returnval == 0)/*short timeout, no request to connect received*/
                     {
-
                     }
                     else/*we got something to read*/
                     {
@@ -211,6 +217,7 @@ int main(int argc, char **argv)
                         {
                             break;
                         }
+
                         else if( (frame->flags == INF) && (frame->seq == expectedSeqence) )/*receive info on next msglength */
                         {
                             printf("INF received, with seq %d \n",frame->seq);
@@ -244,7 +251,10 @@ int main(int argc, char **argv)
                                     perror("Select failed \n");
                                     exit(0);
                                 }
-                                else if(returnval == 0){}/*short timeout, no frame received*/
+                                else if(returnval == 0)/*short timeout, no frame received*/
+                                {
+
+                                }
                                 else/*we got something to read*/
                                 {
                                     frame = receiveFrame(fd, &remaddr);
@@ -267,7 +277,9 @@ int main(int argc, char **argv)
                                         expectedSeqence = ((expectedSeqence + 1) % MAXSEQ);
                                         free(frame);
                                     }
-                                    else if(frameCountdown == 1)/*last frame to read, data is complete, print msg from msgbuffer to screen*/
+                                    else if(frame->flags == ACK &&
+                                       frame->seq == expectedSeqence &&
+                                            frameCountdown == 1)/*last frame to read, data is complete, print msg from msgbuffer to screen*/
                                     {
                                         /*Send ACK on corresponding sequence*/
                                         rtp* tempframe = newFrame(ACK, expectedSeqence, 0);//create ACK
@@ -299,7 +311,7 @@ int main(int argc, char **argv)
                                             if(frame->seq == i)
                                             {
                                                 //UNEXPECTED
-                                                printf("Unexpected frame received. Throw away seq: %d \n",frame->seq);
+                                                printf("Expected frame was %d. Throw away received unexpected seq: %d \n",expectedSeqence,frame->seq);
                                                 break;
 
                                             }
@@ -310,15 +322,14 @@ int main(int argc, char **argv)
                                             /*Send ACK on corresponding sequence*/
                                             rtp* tempframe = newFrame(ACK, frame->seq, 0);//create ACK
                                             sendFrame(fd, tempframe, remaddr, chanceOfFrameError); /*send ACK*/
-                                            printf("Sent ACK on '/0' seq: %d \n", tempframe->seq);
+                                            printf("Received frame outside window. Sent ACK on seq: %d \n", tempframe->seq);
                                             free(tempframe);
                                         }
                                         free(frame);
-                                        break;
                                     }
                                     else/*received unexpected frame, throw away*/
                                     {
-                                        printf("Unexpected frame received. Throw away seq: %d \n",frame->seq);
+                                        printf("Expected frame was %d. Throw away seq: %d \n",expectedSeqence, frame->seq);
                                         free(frame);
                                     }
                                 }/*End of got ACK frames to read*/
@@ -330,6 +341,7 @@ int main(int argc, char **argv)
                                 state = CLOSED;
                                 break;
                             }
+
                         }/*End of recieved info-frame*/
                     }/*End of got INF frame to read*/
                 }/*End of for-loop*/
