@@ -22,7 +22,7 @@
 #define MAXMSG 254 // 255 character message with a \0 character at the end
 
 //Frame
-#define BUFFERSIZE 4 //size in bytes of buffer to send over UDP 1 byte each for flags, seq and data.
+#define BUFFERSIZE 10 //size in bytes of buffer to send over UDP 1 byte each for flags, seq and data.
 
 //Sliding window
 #define MAXSEQ 16
@@ -39,8 +39,8 @@
 
 typedef struct rtp_struct
 {
-    uint8_t flags;
-    uint8_t seq; //sequence number (frame number)
+    int flags;
+    int seq; //sequence number (frame number)
     char data; //one character at a time, if flag is INF then the char value is the number of characters in the complete message.
 } rtp;
 
@@ -60,10 +60,10 @@ rtp* newFrame(int flags, int seq, char data);
 //serializing
 struct Buffer* newBuffer();
 void serializeFrame(rtp* frame, struct Buffer* buf);
-void serialize_uint8(uint8_t n, struct Buffer* buf);
+void serialize_int(int n, struct Buffer* buf);
 void serialize_char(char c, struct Buffer* buf);
 void deserializeFrame(rtp* frame, struct Buffer* buf);
-void deserialize_uint8(uint8_t* n, struct Buffer* buf);
+void deserialize_int(int* n, struct Buffer* buf);
 void deserialize_char(char* c, struct Buffer* buf);
 
 //sending and receiving frames
