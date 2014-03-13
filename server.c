@@ -125,7 +125,17 @@ int main(int argc, char **argv)
                         perror("Select failed \n");
                         exit(0);
                     }
-                    else if(returnval == 0){}/*short timeout, no request to connect received*/
+                    else if(returnval == 0)/*short timeout, no request to connect received*/
+                    {
+                        /*resend syn+ack*/
+                        frame = newFrame(SYN+ACK, 0, 0);//create a SYN+ACK frame
+
+                        sendFrame(fd, frame, remaddr, chanceOfFrameError);
+
+                        printf("Resent SYN + ACK \n");
+                        free(frame);
+
+                    }/*short timeout, no request to connect received*/
                     else/*we got something to read*/
                     {
                         frame = receiveFrame(fd, &remaddr);
