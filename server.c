@@ -33,6 +33,8 @@ int main(int argc, char **argv)
             {
                 close(fd);/*Close (if any) old socket*/
 
+                chanceOfFrameError = getFrameErrorPercentage();
+
                 prepareSocket(&fd, &myaddr);/*create and bind socket*/
 
                 state = LISTEN;
@@ -177,7 +179,7 @@ int main(int argc, char **argv)
 
             case ESTABLISHED:
             {
-                printf("Awaiting new INF on seq: %d \n",expectedSeqence );
+                printf("Listening for new INF on seq: %d \n",expectedSeqence );
 
                 dataToReceive = false;
                 dataIsComplete = false;
@@ -207,8 +209,6 @@ int main(int argc, char **argv)
 
                         if(frame->flags == FIN)/*receive request to teardown connection*/
                         {
-                            state = RESPOND_TEARDOWN;
-                            free(frame);
                             break;
                         }
                         else if( (frame->flags == INF) && (frame->seq == expectedSeqence) )/*receive info on next msglength */
@@ -269,6 +269,12 @@ int main(int argc, char **argv)
                                     }
                                     else if(frameCountdown == 1)/*last frame to read, data is complete, print msg from msgbuffer to screen*/
                                     {
+                                        /*Send ACK on corresponding sequence*/
+                                        rtp* tempframe = newFrame(ACK, expectedSeqence, 0);//create ACK
+                                        sendFrame(fd, tempframe, remaddr, chanceOfFrameError); /*send ACK*/
+                                        printf("Sent final ACK. seq: %d \n\n", expectedSeqence);
+                                        free(tempframe);
+
                                         printf("Received msg: ");
 
                                         msgBuffer[strInd] = frame->data;
@@ -277,15 +283,12 @@ int main(int argc, char **argv)
 
                                         free(frame);
 
-                                        /*Send ACK on corresponding sequence*/
-                                        frame = newFrame(ACK, expectedSeqence, 0);//create ACK
-                                        sendFrame(fd, frame, remaddr, chanceOfFrameError); /*send ACK*/
-                                        printf("Sent ACK on '/0' seq: %d \n", expectedSeqence);
-                                        free(frame);
-
                                         strInd = 0;
                                         expectedSeqence = ((expectedSeqence + 1) % MAXSEQ);
                                         dataIsComplete =true;
+
+                                        printf("Listening for new INF on seq: %d \n",expectedSeqence );
+
                                         break;
                                     }
                                     else if(frame->flags == ACK)
@@ -335,6 +338,12 @@ int main(int argc, char **argv)
                 {
                     printf("Long timeout. No INF-frame received. Reset connection setup \n");
                     state = CLOSED;
+                    break;
+                }
+                else if(frame->flags == FIN)
+                {
+                    state = RESPOND_TEARDOWN;
+                    free(frame);
                     break;
                 }
                 else/*msg complete. Listen for new msg*/
