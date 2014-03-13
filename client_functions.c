@@ -20,7 +20,7 @@ void prepareHostAddr(struct sockaddr_in* servAddr, char* hostName, int port)
 }
 
 
-struct WindowStruct
+struct windowStruct
 {
     int sfd;
     struct sockaddr_in servAddr;
@@ -36,7 +36,7 @@ int clientSlidingWindow(int sfd, struct sockaddr_in* servAddr, int errorChance)
     int numOfShortTimeouts = 0;
     pthread_t inputThread;
 
-    struct WindowStruct window;
+    struct windowStruct window;
     window.sfd = sfd;
     window.servAddr = *servAddr;
     window.startSeq = 0;
@@ -65,7 +65,7 @@ int clientSlidingWindow(int sfd, struct sockaddr_in* servAddr, int errorChance)
                && receivedFrame->seq < window.endSeq)// the sequence is less than the last seq sent+1
             {
                 printf("ACK received! Seq: %d\n",receivedFrame->seq);
-                window.startSeq = receivedFrame->seq+1;
+                window.startSeq = (receivedFrame->seq+1)%MAXSEQ;
                 free(receivedFrame);
             }
             else /*received unexpected packet*/
@@ -86,7 +86,7 @@ int clientSlidingWindow(int sfd, struct sockaddr_in* servAddr, int errorChance)
 
 void* inputThreadFunction(void *arg)
 {
-    struct WindowStruct *window = (struct WindowStruct *)arg;
+    struct windowStruct *window = (struct WindowStruct *)arg;
     char messageString[MAXMSG];
     while(1)
     {
@@ -113,7 +113,8 @@ void* inputThreadFunction(void *arg)
                 while(window->endSeq-window->startSeq == WINDSIZE)
                 {
                     usleep(200000);
-                    ///resend all sent frames
+                    if(window->endSeq-window->startSeq == WINDSIZE)
+                        resendFrames(window);
                 }
                 free(window->frameSeq[window->endSeq]);
                 window->frameSeq[window->endSeq] = newFrame(ACK,window->endSeq,messageString[i]);
@@ -123,8 +124,19 @@ void* inputThreadFunction(void *arg)
             while(window->endSeq-window->startSeq != 0)
             {
                 usleep(200000);
-                ///resend all sent frames
+                if(window->endSeq-window->startSeq != 0)
+                    resendFrames(window);
             }
         }
     }
 }
+
+void resendFrames(struct windowStruct *window)
+{
+    for(int i = window->startSeq; i!=window->endSeq; i=(i+1)%MAXSEQ)
+    {
+        sendFrame(window->frameSeq[i]);
+    }
+}
+
+

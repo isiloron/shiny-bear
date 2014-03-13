@@ -48,51 +48,39 @@ struct Buffer* newBuffer()
     return buf;
 }
 
-void reserveSpace(struct Buffer* buf, size_t bytes)
-{
-    if((buf->next + bytes) > buf->size)
-    {
-        /* double size to enforce O(lg N) reallocs */
-        buf->data = realloc(buf->data, buf->size * 2);
-        buf->size *= 2;
-    }
-}
-
 void serializeFrame(rtp* frame, struct Buffer* buf)
 {
-    serializeInt(frame->flags,buf);
-    serializeInt(frame->seq,buf);
-    serializeChar(frame->data,buf);
+    serialize_uint8(frame->flags,buf);
+    serialize_uint8(frame->seq,buf);
+    serialize_char(frame->data,buf);
 }
 
-void serializeInt(int n, struct Buffer* buf)
+void serialize_uint8(uint8_t n, struct Buffer* buf)
 {
-    reserveSpace(buf,sizeof(int));
-    memcpy( ((char *)buf->data)+(buf->next), &n, sizeof(int));
-    buf->next += sizeof(int);
+    memcpy( ((char *)buf->data)+(buf->next), &n, sizeof(uint8_t));
+    buf->next += sizeof(uint8_t);
 }
 
-void serializeChar(char c, struct Buffer* buf)
+void serialize_char(char c, struct Buffer* buf)
 {
-    reserveSpace(buf,sizeof(char));
     memcpy(((char*)buf->data)+(buf->next),&c, sizeof(char));
     buf->next += sizeof(char);
 }
 
 void deserializeFrame(rtp* frame, struct Buffer* buf)
 {
-    deserializeInt(&(frame->flags),buf);
-    deserializeInt(&(frame->seq),buf);
-    deserializeChar(&(frame->data),buf);
+    deserialize_uint8(&(frame->flags),buf);
+    deserialize_uint8(&(frame->seq),buf);
+    deserialize_char(&(frame->data),buf);
 }
 
-void deserializeInt(int* n, struct Buffer* buf)
+void deserialize_uint8(uint8_t* n, struct Buffer* buf)
 {
-    memcpy(n,((char*)buf->data)+(buf->next), sizeof(int));
-    buf->next += sizeof(int);
+    memcpy(n,((char*)buf->data)+(buf->next), sizeof(uint8_t));
+    buf->next += sizeof(uint8_t);
 }
 
-void deserializeChar(char* c, struct Buffer* buf)
+void deserialize_char(char* c, struct Buffer* buf)
 {
     memcpy(c,((char*)buf->data)+(buf->next), sizeof(char));
     buf->next += sizeof(char);
