@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS =-c -Wall
-LDFLAGS =
+LDFLAGS = -pthread
 SOURCES = client.c protocol_std_functions.c client_functions.c 
 OBJECTS = ${SOURCES: .c = .o}
 EXECUTABLE = client

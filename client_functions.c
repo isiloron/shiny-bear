@@ -20,15 +20,7 @@ void prepareHostAddr(struct sockaddr_in* servAddr, char* hostName, int port)
 }
 
 
-struct windowStruct
-{
-    int sfd;
-    struct sockaddr_in servAddr;
-    rtp* frameSeq[MAXSEQ];
-    int startSeq;
-    int endSeq; // is one greater than the last seq sent, equal to startSeq if no frames has been sent, endSeq-startSeq = number of frames sent
-    int errorChance;
-};
+
 
 int clientSlidingWindow(int sfd, struct sockaddr_in* servAddr, int errorChance)
 {
@@ -86,7 +78,7 @@ int clientSlidingWindow(int sfd, struct sockaddr_in* servAddr, int errorChance)
 
 void* inputThreadFunction(void *arg)
 {
-    struct windowStruct *window = (struct WindowStruct *)arg;
+    struct windowStruct *window = (struct windowStruct *)arg;
     char messageString[MAXMSG];
     while(1)
     {
@@ -133,9 +125,10 @@ void* inputThreadFunction(void *arg)
 
 void resendFrames(struct windowStruct *window)
 {
-    for(int i = window->startSeq; i!=window->endSeq; i=(i+1)%MAXSEQ)
+    int i;
+    for(i = window->startSeq; i!=window->endSeq; i=(i+1)%MAXSEQ)
     {
-        sendFrame(window->frameSeq[i]);
+        sendFrame(window->sfd, window->frameSeq[i], window->servAddr, window->errorChance);
     }
 }
 

@@ -30,8 +30,8 @@ rtp* newFrame(int flags, int seq, char data)
         return NULL;
     }
 
-    frame->flags = flags;
-    frame->seq = seq;
+    frame->flags = (uint8_t)flags;
+    frame->seq = (uint8_t)seq;
     frame->data = data;
 
     return frame;
@@ -122,7 +122,7 @@ rtp* receiveFrame(int socket, struct sockaddr_in* sourceAddr)
     recvfrom(socket, buffer->data, buffer->size, 0, (struct sockaddr*)sourceAddr, &addrLen);/*received serialized segment*/
     frame = newFrame(0, 0, 0);/*create empty frame*/
 
-    checkCrc(buffer);
+    //checkCrc(buffer);
 
     deserializeFrame(frame, buffer);/*Deserialize the received segment stored in buffer into the created frame*/
 
