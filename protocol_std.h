@@ -19,10 +19,10 @@
 #define PORT 5555
 
 //Message
-#define MAXMSG 254 //char (-1 for '\0')
+#define MAXMSG 254 // 255 character message with a \0 character at the end
 
 //Frame
-#define BUFFERSIZE 16 //size of buffer to send over UDP
+#define BUFFERSIZE 4 //size in bytes of buffer to send over UDP 1 byte each for flags, seq and data.
 
 //Sliding window
 #define MAXSEQ 16
@@ -39,8 +39,8 @@
 
 typedef struct rtp_struct
 {
-    int flags;
-    int seq; //sequence number (frame number)
+    uint8_t flags;
+    uint8_t seq; //sequence number (frame number)
     char data; //one character at a time, if flag is INF then the char value is the number of characters in the complete message.
 } rtp;
 
@@ -57,18 +57,22 @@ void prepareSocket(int* sock_fd, struct sockaddr_in* sockaddr);
 //Frames
 rtp* newFrame(int flags, int seq, char data);
 
+//serializing
 struct Buffer* newBuffer();
-void reserveSpace(struct Buffer* buf, size_t bytes);
 void serializeFrame(rtp* frame, struct Buffer* buf);
-void serializeInt(int n, struct Buffer* buf);
-void serializeChar(char c, struct Buffer* buf);
+void serialize_uint8(uint8_t n, struct Buffer* buf);
+void serialize_char(char c, struct Buffer* buf);
 void deserializeFrame(rtp* frame, struct Buffer* buf);
-void deserializeInt(int* n, struct Buffer* buf);
-void deserializeChar(char* c, struct Buffer* buf);
+void deserialize_uint8(uint8_t* n, struct Buffer* buf);
+void deserialize_char(char* c, struct Buffer* buf);
+
+//sending and receiving frames
 int sendFrame(int socket, rtp* frame, struct sockaddr_in dest, int chanceOfFrameError);
 rtp* receiveFrame(int socket, struct sockaddr_in* sourceAddr);
 void resetShortTimeout(struct timeval* shortTimeout);
 int waitForFrame(int fd, struct timeval* shortTimeout);
+
+//error generation
 int getFrameErrorPercentage();
 int generateError(int chanceOfFrameError);
 void convToBinary(char* data);
