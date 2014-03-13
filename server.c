@@ -273,7 +273,7 @@ int main(int argc, char **argv)
                         else if(frame->flags == ACK)
                         {
                             int i;
-                            for(i=expectedSeqence; i!=(expectedSeqence+WINDSIZE-1)%MAXSEQ; i = (i+1)%MAXSEQ)
+                            for(i=expectedSeqence; i!=(expectedSeqence+WINDSIZE)%MAXSEQ; i = (i+1)%MAXSEQ)
                             {
                                 if(frame->seq == i)
                                 {
@@ -282,7 +282,7 @@ int main(int argc, char **argv)
                                     break;
                                 }
                             }
-                            if(i==(expectedSeqence+WINDSIZE-1)%MAXSEQ)
+                            if(i==(expectedSeqence+WINDSIZE)%MAXSEQ)
                             {
                                 //outside window
                                 /*Send ACK on corresponding sequence*/
