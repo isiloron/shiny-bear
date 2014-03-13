@@ -92,18 +92,7 @@ int sendFrame(int socket, rtp* frame, struct sockaddr_in dest, int chanceOfFrame
     if(generateError(chanceOfFrameError) == 1)/*frame dissapear*/
     {
         printf("Frame dissapear! \n");
-        struct Buffer* buffer = newBuffer();
-        int bytesSent = 0;
-
-        rtp* failframe = newFrame(-1, -1, -1);
-
-        serializeFrame(failframe, buffer);
-
-        bytesSent = sendto(socket, buffer->data, buffer->size, 0, (struct sockaddr*)&dest, sizeof(dest));
-
-        free(buffer);
-
-        return bytesSent;
+        return BUFFERSIZE;
     }
 /*    else if(generateError(chanceOfFrameError) == 2) CRC fails
     {
@@ -231,11 +220,11 @@ int getFrameErrorPercentage()
 
 int generateError(int chanceOfFrameError)
 {
-    int error = (rand() % 100)+1;
+    int error = (rand() % 101); // error percentage from 0% to 100 %
 
-    if(error <= chanceOfFrameError)/*if true; frame will get error*/
+    if(error <= chanceOfFrameError)/*frame will get error*/
     {
-        return (rand() % 2);
+        return (rand() % 1); //change to 2 when buffer curruption is working
     }
     else/*frame will be ok*/
     {

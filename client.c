@@ -12,6 +12,8 @@
 
 int main(int argc, char *argv[])
 {
+    srand(time(NULL));
+
     int sfd;
     struct sockaddr_in myAddr;
     struct sockaddr_in servAddr;
@@ -22,16 +24,29 @@ int main(int argc, char *argv[])
     int numOfShortTimeouts = 0;
     int errorChance = 0;
 
-
     if(argv[1] == NULL)
     {
-        perror("Usage: client [host name]");
+        perror("Usage: client [host name] [error percentage]");
         exit(EXIT_FAILURE);
     }
     else
     {
         strncpy(hostName, argv[1], hostNameLength);
         hostName[hostNameLength - 1] = '\0';
+    }
+
+    if(argv[2] == NULL)
+    {
+        perror("Usage: client [host name] [error percentage]");
+        exit(EXIT_FAILURE);
+    }
+    else
+    {
+        errorChance = atoi(argv[2]);
+        if(errorChance<0)
+            errorChance = 0;
+        else if (errorChance>100)
+            errorChance = 100;
     }
 
     prepareHostAddr(&servAddr, hostName, PORT);
