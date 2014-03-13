@@ -71,6 +71,8 @@ void resetShortTimeout(struct timeval* shortTimeout);
 int waitForFrame(int fd, struct timeval* shortTimeout);
 int getFrameErrorPercentage();
 int generateError(int chanceOfFrameError);
+void convToBinary(char* data);
+void checkCrc(struct Buffer* buffer);
 
 
 #endif //PROTOCOL_STD_H

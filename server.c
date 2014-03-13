@@ -183,8 +183,8 @@ int main(int argc, char **argv)
             {
                 printf("Awaiting new message... \n");
 
-                dataToReceive == false;
-                dataIsComplete ==false;
+                dataToReceive = false;
+                dataIsComplete = false;
 
                 for(numOfshortTimeouts=0; numOfshortTimeouts<longTimeOut; numOfshortTimeouts++)
                 {
@@ -220,7 +220,7 @@ int main(int argc, char **argv)
                         else if( (frame->flags == INF) && (frame->seq == expectedSeqence) )/*receive info on next msglength */
                         {
                             printf("INF received, with seq %d \n",frame->seq);
-                            dataToReceive == true;
+                            dataToReceive = true;
 
                             frameCountdown = frame->data;
                             free(frame);
@@ -283,7 +283,7 @@ int main(int argc, char **argv)
                                         free(frame);
                                         strInd = 0;
                                         expectedSeqence = ((expectedSeqence + 1) % MAXSEQ);
-                                        dataIsComplete ==true;
+                                        dataIsComplete =true;
                                         break;
                                     }
                                     else/*received unexpected frame, throw away*/
@@ -296,7 +296,7 @@ int main(int argc, char **argv)
 
                             if(dataIsComplete == false)
                             {
-                                printf("Long timeout. Msg was not received completely. Reset connection setup \n");
+                                printf("Long timeout. Msg was incomplete. Reset connection setup \n");
                                 state = CLOSED;
                                 break;
                             }
@@ -306,7 +306,7 @@ int main(int argc, char **argv)
 
                 if(dataToReceive ==false)
                 {
-                    printf("Long timeout. No msg at all received. Reset connection setup \n");
+                    printf("Long timeout. No INF-frame received. Reset connection setup \n");
                     state = CLOSED;
                     break;
                 }

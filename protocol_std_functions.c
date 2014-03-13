@@ -133,9 +133,10 @@ rtp* receiveFrame(int socket, struct sockaddr_in* sourceAddr)
     buffer = newBuffer();/*create helpbuffer for deserializing*/
     recvfrom(socket, buffer->data, buffer->size, 0, (struct sockaddr*)sourceAddr, &addrLen);/*received serialized segment*/
     frame = newFrame(0, 0, 0);/*create empty frame*/
-    deserializeFrame(frame, buffer);/*Deserialize the received segment stored in buffer into the created frame*/
 
-    //TODO: CRC
+    checkCrc(buffer);
+
+    deserializeFrame(frame, buffer);/*Deserialize the received segment stored in buffer into the created frame*/
 
     free(buffer);
 
@@ -173,9 +174,42 @@ void setCrc(int* crc, rtp* frame)
 
 }
 
-void checkCrc(rtp* frame)
+void checkCrc(struct Buffer* buffer)
 {
+    buffer->data = (char*)buffer->data;
+    convToBinary(buffer->data);
+}
 
+void convToBinary(char* data)/*rewrite int as binary*/
+{
+   char binaryArr[31];
+   int i = 0;
+
+   printf("Binary representation of %d (int) \n", (int)*data);
+
+   while(*data > 0)
+   {
+       binaryArr[i] = (int)*data % 2; /*rest of data, when div with 2*/
+       *data= (*data/2);/*update data*/
+       i++;
+   }
+   while(i < 31)
+   {
+       binaryArr[i] = 0;
+       i++;
+   }
+
+    /*print in reverse order*/
+
+    printf("This is the binary representation of the buffer: \n");
+
+    for(i = 31; i > -1; i--)
+    {
+        printf("%d",binaryArr[i]);
+    }
+    printf("\n");
+
+    /*xor-division binaryArr/G(x) == 0 if ok*/
 }
 
 int getFrameErrorPercentage()
@@ -184,6 +218,7 @@ int getFrameErrorPercentage()
     int percentage;
 
     printf("Enter the probability, in percentage (0-100), that a frame will be currupted/lost: ");
+    fflush(stdin);
     fgets(buffer, 10, stdin);
     percentage = atoi(buffer);
 
@@ -209,5 +244,4 @@ int generateError(int chanceOfFrameError)
         return 0;
     }
 }
-
 
