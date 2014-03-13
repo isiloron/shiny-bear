@@ -93,7 +93,7 @@ void* inputThreadFunction(void *arg)
         else
         {
             ///Först en info
-            printf("Sending INF.\n");
+            printf("Sending INF. seq:%d\n",window->endSeq);
             if(window->frameSeq[window->endSeq] != NULL)
                 free(window->frameSeq[window->endSeq]); //frees the next frame in sequence
             window->frameSeq[window->endSeq] = newFrame(INF,window->endSeq,strlen(messageString)+1);
