@@ -12,6 +12,8 @@
 
 int main(int argc, char *argv[])
 {
+    srand(time(NULL));
+
     int sfd;
     struct sockaddr_in myAddr;
     struct sockaddr_in servAddr;
@@ -41,6 +43,10 @@ int main(int argc, char *argv[])
     else
     {
         errorChance = atoi(argv[2]);
+        if(errorChance<0)
+            errorChance = 0;
+        else if (errorChance>100)
+            errorChance = 100;
     }
 
     prepareHostAddr(&servAddr, hostName, PORT);
