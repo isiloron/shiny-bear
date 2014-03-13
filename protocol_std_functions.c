@@ -88,29 +88,39 @@ void deserialize_char(char* c, struct Buffer* buf)
 
 int sendFrame(int socket, rtp* frame, struct sockaddr_in dest, int chanceOfFrameError)
 {
-    /*
-    if(generateError(chanceOfFrameError) == 1)
+
+    if(generateError(chanceOfFrameError) == 1)/*frame dissapear*/
     {
-        printf("Frame dissapear \n");
+        printf("Frame dissapear! \n");
+        struct Buffer* buffer = newBuffer();
+        int bytesSent = 0;
+
+        rtp* failframe = newFrame(-1, -1, -1);
+
+        serializeFrame(failframe, buffer);
+
+        bytesSent = sendto(socket, buffer->data, buffer->size, 0, (struct sockaddr*)&dest, sizeof(dest));
+
+        free(buffer);
+
+        return bytesSent;
     }
-    else if(generateError(chanceOfFrameError) == 2)
+/*    else if(generateError(chanceOfFrameError) == 2) CRC fails
     {
-        printf("CRC error \n");
+        something smart and thoughtfull
     }
+*/
     else
     {
-        printf("Frame ok \n");
+        struct Buffer* buffer = newBuffer();
+        int bytesSent = 0;
+        //TODO: CRC
+        serializeFrame(frame, buffer);
+
+        bytesSent = sendto(socket, buffer->data, buffer->size, 0, (struct sockaddr*)&dest, sizeof(dest));
+        free(buffer);
+        return bytesSent;
     }
-    */
-
-    struct Buffer* buffer = newBuffer();
-    int bytesSent = 0;
-    //TODO: CRC
-    serializeFrame(frame, buffer);
-
-    bytesSent = sendto(socket, buffer->data, buffer->size, 0, (struct sockaddr*)&dest, sizeof(dest));
-    free(buffer);
-    return bytesSent;
 }
 
 rtp* receiveFrame(int socket, struct sockaddr_in* sourceAddr)
