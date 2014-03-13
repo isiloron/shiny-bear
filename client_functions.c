@@ -54,13 +54,23 @@ int clientSlidingWindow(int sfd, struct sockaddr_in* servAddr, int errorChance)
         {
             receivedFrame = receiveFrame(sfd,servAddr);
 
-            if(receivedFrame->flags == ACK //it is an ACK
-               && receivedFrame->seq >= window.startSeq // it is the expected ack or greater
-               && receivedFrame->seq < window.endSeq)// the sequence is less than the last seq sent+1
+            if(receivedFrame->flags == ACK)// the sequence is less than the last seq sent+1
             {
-                printf("ACK received! Seq: %d\n",receivedFrame->seq);
-                window.startSeq = (receivedFrame->seq+1)%MAXSEQ;
+                for(i=window.startSeq; i!=window.endSeq; i=(i+1)%MAXSEQ)
+                {
+                    if(receivedFrame->seq == i)
+                    {
+                        printf("ACK received! Seq: %d\n",receivedFrame->seq);
+                        window.startSeq = (receivedFrame->seq+1)%MAXSEQ;
+                        free(receivedFrame);
+                        break;
+                    }
+                }
+                if(i==window.endSeq)
+                {
+                    printf("Unexpected packet received! \n");
                 free(receivedFrame);
+                }
             }
             else /*received unexpected packet*/
             {
@@ -73,9 +83,9 @@ int clientSlidingWindow(int sfd, struct sockaddr_in* servAddr, int errorChance)
             return 0;
         }
     }
-    /// long timeout, stäng av lästråden och returnera 1
+    /// long timeout, stäng av lästråden och returnera -1
     pthread_cancel(inputThread);
-    return 1;
+    return -1;
 }
 
 void* inputThreadFunction(void *arg)
@@ -85,6 +95,7 @@ void* inputThreadFunction(void *arg)
     while(1)
     {
         fflush(stdin);
+        printf("Message: ");
         fgets(messageString,MAXMSG,stdin);
         if(strncmp(messageString,"FIN\n",MAXMSG)==0)
         {
