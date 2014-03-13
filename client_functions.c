@@ -34,8 +34,11 @@ int clientSlidingWindow(int sfd, struct sockaddr_in* servAddr, int errorChance)
     window.startSeq = 0;
     window.endSeq = 0;
     window.errorChance = errorChance;
+    int i;
+    for(i=0;i<MAXSEQ;i++)
+        window.frameSeq[i]=NULL;
 
-    ///tråd som tar in ett meddelande från användaren och skickar iväg frames
+    printf("Creating input thread!\n");
     if(pthread_create(&inputThread, NULL, &inputThreadFunction, &window) != 0)
     {
         perror("Could not create thread!");
@@ -49,7 +52,6 @@ int clientSlidingWindow(int sfd, struct sockaddr_in* servAddr, int errorChance)
         resetShortTimeout(&shortTimeout);
         if(waitForFrame(sfd, &shortTimeout) == 1) //something to read
         {
-            ///läser ackar
             receivedFrame = receiveFrame(sfd,servAddr);
 
             if(receivedFrame->flags == ACK //it is an ACK
@@ -92,7 +94,8 @@ void* inputThreadFunction(void *arg)
         {
             ///Först en info
             printf("Sending INF.\n");
-            free(window->frameSeq[window->endSeq]); //frees the next frame in sequence
+            if(window->frameSeq[window->endSeq] != NULL)
+                free(window->frameSeq[window->endSeq]); //frees the next frame in sequence
             window->frameSeq[window->endSeq] = newFrame(INF,window->endSeq,strlen(messageString)+1);
             sendFrame(window->sfd, window->frameSeq[window->endSeq], window->servAddr, window->errorChance);
             window->endSeq=(window->endSeq+1)%MAXSEQ;
@@ -108,10 +111,15 @@ void* inputThreadFunction(void *arg)
                     if(window->endSeq-window->startSeq == WINDSIZE)
                         resendFrames(window);
                 }
-                free(window->frameSeq[window->endSeq]);
+                printf("Sending frame, seq:%d ... ",window->endSeq);
+
+                if(window->frameSeq[window->endSeq] != NULL)
+                    free(window->frameSeq[window->endSeq]); //frees the next frame in sequence
+
                 window->frameSeq[window->endSeq] = newFrame(ACK,window->endSeq,messageString[i]);
                 sendFrame(window->sfd, window->frameSeq[window->endSeq], window->servAddr, window->errorChance);
                 window->endSeq=(window->endSeq+1)%MAXSEQ;
+                printf("frame sent!\n");
             }
             while(window->endSeq-window->startSeq != 0)
             {
@@ -128,6 +136,7 @@ void resendFrames(struct windowStruct *window)
     int i;
     for(i = window->startSeq; i!=window->endSeq; i=(i+1)%MAXSEQ)
     {
+        printf("Resending frame, seq:%d\n",i);
         sendFrame(window->sfd, window->frameSeq[i], window->servAddr, window->errorChance);
     }
 }
