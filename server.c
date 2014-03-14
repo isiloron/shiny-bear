@@ -22,6 +22,8 @@ int main(int argc, char **argv)
     int chanceOfFrameError = 0;
     rtp* frame = NULL;
 
+    chanceOfFrameError = getFrameErrorPercentage();
+
     while(1)/*for now press Ctr + 'c' to exit program*/
     {
         switch(state)
@@ -29,8 +31,6 @@ int main(int argc, char **argv)
             case CLOSED:
             {
                 close(fd);/*Close (if any) old socket*/
-
-                chanceOfFrameError = getFrameErrorPercentage();
 
                 prepareSocket(&fd, &myaddr);/*create and bind socket*/
 
