@@ -108,7 +108,8 @@ int main(int argc, char *argv[])
                 printf("Entered PRECAUTION state!\n");
                 for(numOfShortTimeouts=0; numOfShortTimeouts<longTimeOut; numOfShortTimeouts++)
                 {
-                    resetShortTimeout(&shortTimeout);
+                    shortTimeout.tv_sec = 1;
+                    shortTimeout.tv_usec = 0;
                     if(waitForFrame(sfd,&shortTimeout) == 0)
                     {
                         state = ESTABLISHED;
