@@ -273,17 +273,16 @@ int main(int argc, char **argv)
                         else if(frame->flags == ACK)
                         {
                             int i;
-                            /*Something fishy about this */
-                            for(i=expectedSeqence+1; i!=(expectedSeqence+WINDSIZE-1)%MAXSEQ; i = (i+1)%MAXSEQ)
+                            for(i=expectedSeqence; i!=(expectedSeqence+WINDSIZE)%MAXSEQ; i=(i+1)%MAXSEQ)
                             {
                                 if(frame->seq == i)
                                 {
-                                    //UNEXPECTED
-                                    printf("Unexpected frame received. Throw away seq: %d \n",frame->seq);
+                                    //frame out of order.
+                                    printf("Frame out of order received. Throw away seq: %d \n",frame->seq);
                                     break;
                                 }
                             }
-                            if(i==(expectedSeqence+WINDSIZE-1)%MAXSEQ)
+                            if(i==(expectedSeqence+WINDSIZE)%MAXSEQ)
                             {
                                 //outside window
                                 /*Send ACK on corresponding sequence*/
