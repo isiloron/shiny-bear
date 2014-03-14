@@ -222,7 +222,7 @@ int generateError(int chanceOfFrameError)
 {
     int error = (rand() % 101); // error percentage from 0% to 100 %
 
-    if(error <= chanceOfFrameError)/*frame will get error*/
+    if(error < chanceOfFrameError)/*frame will get error*/
     {
         return 1; //change to (rand() % 2)+1 when buffer curruption is working
     }

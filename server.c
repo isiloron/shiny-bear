@@ -200,6 +200,8 @@ int main(int argc, char **argv)
                     }
                     else/*we got something to read*/
                     {
+                        printf("frameCountdown = %d \n", frameCountdown);
+                        numOfshortTimeouts =0;
                         frame = receiveFrame(fd, &remaddr);
 
                         if(frame->flags == FIN)/*receive request to teardown connection*/
@@ -220,7 +222,6 @@ int main(int argc, char **argv)
                             free(frame);
 
                             expectedSeqence = ((expectedSeqence + 1) % MAXSEQ);
-                            numOfshortTimeouts =0;
                         }
                         else if (frame->flags == ACK &&
                                  frame->seq == expectedSeqence &&
@@ -261,9 +262,10 @@ int main(int argc, char **argv)
                             expectedSeqence = ((expectedSeqence + 1) % MAXSEQ);
 
                             printf("Listening for new INF on seq: %d \n",expectedSeqence );
-                            numOfshortTimeouts =0;
+
                         }
-                        else if(frame->flags == ACK)
+                        else if(frame->flags == ACK &&
+                                frame->seq != expectedSeqence)
                         {
                             int i;
                             for(i=expectedSeqence; i!=(expectedSeqence+WINDSIZE)%MAXSEQ; i=(i+1)%MAXSEQ)
@@ -271,7 +273,7 @@ int main(int argc, char **argv)
                                 if(frame->seq == i)
                                 {
                                     //frame out of order.
-                                    printf("Frame out of order received. Throw away seq: %d \n",frame->seq);
+                                    printf("Received frame seq: %d. Out of order. Expecting seq: %d  \n",frame->seq, expectedSeqence);
                                     break;
                                 }
                             }
