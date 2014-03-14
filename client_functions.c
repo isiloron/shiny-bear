@@ -99,6 +99,8 @@ void* inputThreadFunction(void *arg)
         fflush(stdin);
         printf("Message: ");
         fgets(messageString,MAXMSG,stdin);
+        messageString[MAXMSG-1] = '\0';
+        printf("Number of chars to send: %d\n",(int)strlen(messageString+1));
         if(strncmp(messageString,"FIN\n",MAXMSG)==0)
         {
             return NULL;

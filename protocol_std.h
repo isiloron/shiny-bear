@@ -16,10 +16,10 @@
 #include <stdbool.h>
 
 //Socket
-#define PORT 5555
+#define PORT 5556
 
 //Message
-#define MAXMSG 254 // 255 character message with a \0 character at the end
+#define MAXMSG 255 // 255 character message with a \0 character at the end
 
 //Frame
 #define BUFFERSIZE 10 //size in bytes of buffer to send over UDP 1 byte each for flags, seq and data.
