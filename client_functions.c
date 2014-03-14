@@ -69,8 +69,9 @@ int clientSlidingWindow(int sfd, struct sockaddr_in* servAddr, int errorChance)
                 if(i==window.endSeq)
                 {
                     printf("Unexpected packet received! \n");
-                free(receivedFrame);
+                    free(receivedFrame);
                 }
+                numOfShortTimeouts = 0;
             }
             else /*received unexpected packet*/
             {
@@ -80,7 +81,7 @@ int clientSlidingWindow(int sfd, struct sockaddr_in* servAddr, int errorChance)
         }
         else if(pthread_tryjoin_np(inputThread,NULL)==0) //input thread has closed i.e. it is time to tear down
         {
-            return 0;
+            return 0; //application close
         }
     }
     /// long timeout, stäng av lästråden och returnera -1
@@ -117,10 +118,10 @@ void* inputThreadFunction(void *arg)
             int i;
             for(i=0;i<strlen(messageString)+1;i++)
             {
-                while(window->endSeq-window->startSeq == WINDSIZE)
+                while(window->endSeq-window->startSeq == WINDSIZE || window->endSeq-window->startSeq == -WINDSIZE)
                 {
                     usleep(200000);
-                    if(window->endSeq-window->startSeq == WINDSIZE)
+                    if(window->endSeq-window->startSeq == WINDSIZE || window->endSeq-window->startSeq == -WINDSIZE)
                         resendFrames(window);
                 }
                 printf("Sending frame, seq:%d ... ",window->endSeq);
