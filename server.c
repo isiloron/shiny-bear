@@ -192,18 +192,9 @@ int main(int argc, char **argv)
                 {
                     resetShortTimeout(&shortTimeout);
 
-                    FD_ZERO(&read_fd_set);/*clear set*/
-                    FD_SET(fd,&read_fd_set);/*put the fd in the set*/
-
                     /*Await client to send something*/
-                    returnval = select(fd + 1, &read_fd_set, NULL, NULL, &shortTimeout);
-
-                    if(returnval == -1)/*ERROR*/
-                    {
-                        perror("Select failed \n");
-                        exit(0);
-                    }
-                    else if(returnval == 0)/*short timeout, no request to connect received*/
+                    returnval = waitForFrame(fd,&shortTimeout);
+                    if(returnval == 0)/*short timeout, no request to connect received*/
                     {
 
                     }
@@ -229,6 +220,7 @@ int main(int argc, char **argv)
                             free(frame);
 
                             expectedSeqence = ((expectedSeqence + 1) % MAXSEQ);
+                            numOfshortTimeouts =0;
                         }
                         else if (frame->flags == ACK &&
                                  frame->seq == expectedSeqence &&
@@ -269,6 +261,7 @@ int main(int argc, char **argv)
                             expectedSeqence = ((expectedSeqence + 1) % MAXSEQ);
 
                             printf("Listening for new INF on seq: %d \n",expectedSeqence );
+                            numOfshortTimeouts =0;
                         }
                         else if(frame->flags == ACK)
                         {
