@@ -42,6 +42,7 @@ struct Buffer* newBuffer()
     struct Buffer* buf = malloc(sizeof(struct Buffer));
 
     buf->data = malloc(BUFFERSIZE);
+    buf->data = memset(buf->data,0,sizeof(BUFFERSIZE));
     buf->size = BUFFERSIZE;
     buf->next = 0;
 
@@ -50,15 +51,15 @@ struct Buffer* newBuffer()
 
 void serializeFrame(rtp* frame, struct Buffer* buf)
 {
-    serialize_int(frame->flags,buf);
-    serialize_int(frame->seq,buf);
+    serialize_uint8(frame->flags,buf);
+    serialize_uint8(frame->seq,buf);
     serialize_char(frame->data,buf);
 }
 
-void serialize_int(int n, struct Buffer* buf)
+void serialize_uint8(uint8_t n, struct Buffer* buf)
 {
-    memcpy( ((char *)buf->data)+(buf->next), &n, sizeof(int));
-    buf->next += sizeof(int);
+    memcpy( ((char *)buf->data)+(buf->next), &n, sizeof(uint8_t));
+    buf->next += sizeof(uint8_t);
 }
 
 void serialize_char(char c, struct Buffer* buf)
@@ -69,15 +70,15 @@ void serialize_char(char c, struct Buffer* buf)
 
 void deserializeFrame(rtp* frame, struct Buffer* buf)
 {
-    deserialize_int(&(frame->flags),buf);
-    deserialize_int(&(frame->seq),buf);
+    deserialize_uint8(&(frame->flags),buf);
+    deserialize_uint8(&(frame->seq),buf);
     deserialize_char(&(frame->data),buf);
 }
 
-void deserialize_int(int* n, struct Buffer* buf)
+void deserialize_uint8(uint8_t* n, struct Buffer* buf)
 {
-    memcpy(n,((char*)buf->data)+(buf->next), sizeof(int));
-    buf->next += sizeof(int);
+    memcpy(n,((char*)buf->data)+(buf->next), sizeof(uint8_t));
+    buf->next += sizeof(uint8_t);
 }
 
 void deserialize_char(char* c, struct Buffer* buf)
@@ -88,24 +89,32 @@ void deserialize_char(char* c, struct Buffer* buf)
 
 int sendFrame(int socket, rtp* frame, struct sockaddr_in dest, int chanceOfFrameError)
 {
+    int error = generateError(chanceOfFrameError);
+    int scramble;
+    int byte;
 
-    if(generateError(chanceOfFrameError) == 1)/*frame dissapear*/
+    if(error == 1)/*frame dissapear*/
     {
-        printf("Frame dissapear! \n");
+        printf("Frame dissapeared! \n");
         return BUFFERSIZE;
     }
-/*    else if(generateError(chanceOfFrameError) == 2) CRC fails
-    {
-        something smart and thoughtfull
-    }
-*/
     else
     {
         struct Buffer* buffer = newBuffer();
         int bytesSent = 0;
-        //TODO: CRC
         serializeFrame(frame, buffer);
+        setCrc(buffer->data);
+        if(error == 2)
+        {
+            printf("Bit error!\n");
+            uint8_t *tempBuf = (uint8_t*)buffer->data;
+            scramble = rand();
+            for(byte=0;byte<BUFFERSIZE;byte++)
+            {
+                tempBuf[byte] = tempBuf[byte]^( scramble >> (8*(3-byte) ) );
+            }
 
+        }
         bytesSent = sendto(socket, buffer->data, buffer->size, 0, (struct sockaddr*)&dest, sizeof(dest));
         free(buffer);
         return bytesSent;
@@ -121,9 +130,14 @@ rtp* receiveFrame(int socket, struct sockaddr_in* sourceAddr)
     recvfrom(socket, buffer->data, buffer->size, 0, (struct sockaddr*)sourceAddr, &addrLen);/*received serialized segment*/
     frame = newFrame(0, 0, 0);/*create empty frame*/
 
-    //checkCrc(buffer);
-
-    deserializeFrame(frame, buffer);/*Deserialize the received segment stored in buffer into the created frame*/
+    if(checkCrc(buffer->data))
+    {
+        deserializeFrame(frame, buffer);/*Deserialize the received segment stored in buffer into the created frame*/
+    }
+    else
+    {
+        printf("Bit error detected!\n");
+    }
 
     free(buffer);
 
@@ -154,51 +168,6 @@ int waitForFrame(int fd, struct timeval* shortTimeout)
     return returnval;
 }
 
-//TODO CRC
-void setCrc(int* crc, rtp* frame)
-{
-
-
-}
-
-void checkCrc(struct Buffer* buffer)
-{
-    buffer->data = (char*)buffer->data;
-    convToBinary(buffer->data);
-}
-
-void convToBinary(char* data)/*rewrite int as binary*/
-{
-   char binaryArr[31];
-   int i = 0;
-
-   printf("Binary representation of %d (int) \n", (int)*data);
-
-   while(*data > 0)
-   {
-       binaryArr[i] = (int)*data % 2; /*rest of data, when div with 2*/
-       *data= (*data/2);/*update data*/
-       i++;
-   }
-   while(i < 31)
-   {
-       binaryArr[i] = 0;
-       i++;
-   }
-
-    /*print in reverse order*/
-
-    printf("This is the binary representation of the buffer: \n");
-
-    for(i = 31; i > -1; i--)
-    {
-        printf("%d",binaryArr[i]);
-    }
-    printf("\n");
-
-    /*xor-division binaryArr/G(x) == 0 if ok*/
-}
-
 int getFrameErrorPercentage()
 {
     char buffer[10];
@@ -224,11 +193,63 @@ int generateError(int chanceOfFrameError)
 
     if(error < chanceOfFrameError)/*frame will get error*/
     {
-        return 1; //change to (rand() % 2)+1 when buffer curruption is working
+        return (rand() % 2)+1; // randomizes value between 1 and 2
     }
     else/*frame will be ok*/
     {
         return 0;
     }
+}
+
+//CRC (code reference: http://www.barrgroup.com/Embedded-Systems/How-To/CRC-Calculation-C-Code)
+#define TOPBIT 128 //binary 10000000
+void initCrc()
+{
+    uint8_t remainder;
+    int nominator;
+    uint8_t bit;
+    for (nominator=0; nominator<256; nominator++)
+    {
+        remainder = nominator;
+        for(bit=8; bit>0 ; bit--)
+        {
+            if(remainder & TOPBIT)
+            {
+                remainder = (remainder << 1) ^ CRCPOLY;
+            }
+            else
+            {
+                remainder = (remainder << 1);
+            }
+        }
+        crcTable[nominator] = remainder;
+    }
+}
+
+uint8_t getCrc(uint8_t *buffer)
+{
+    uint8_t data;
+    uint8_t remainder=0;
+    int byte;
+    for(byte=0; byte<(BUFFERSIZE-1); byte++)
+    {
+        data = buffer[byte] ^ remainder;
+        remainder = crcTable[data];
+    }
+    return remainder;
+}
+
+void setCrc(uint8_t *buffer)
+{
+    buffer[BUFFERSIZE-1] = getCrc(buffer);
+}
+
+bool checkCrc(uint8_t *buffer)
+{
+    uint8_t remainder = getCrc(buffer);
+    if(crcTable[buffer[BUFFERSIZE-1]^remainder] == 0)
+        return true;
+    else
+        return false;
 }
 

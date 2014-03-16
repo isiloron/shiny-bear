@@ -22,7 +22,7 @@
 #define MAXMSG 255 // 255 character message with a \0 character at the end
 
 //Frame
-#define BUFFERSIZE 10 //size in bytes of buffer to send over UDP 1 byte each for flags, seq and data.
+#define BUFFERSIZE 4 //size in bytes of buffer to send over UDP 1 byte each for flags, seq, data and crc.
 
 //Sliding window
 #define MAXSEQ 16
@@ -39,8 +39,8 @@
 
 typedef struct rtp_struct
 {
-    int flags;
-    int seq; //sequence number (frame number)
+    uint8_t flags;
+    uint8_t seq; //sequence number (frame number)
     char data; //one character at a time, if flag is INF then the char value is the number of characters in the complete message.
 } rtp;
 
@@ -60,10 +60,10 @@ rtp* newFrame(int flags, int seq, char data);
 //serializing
 struct Buffer* newBuffer();
 void serializeFrame(rtp* frame, struct Buffer* buf);
-void serialize_int(int n, struct Buffer* buf);
+void serialize_uint8(uint8_t n, struct Buffer* buf);
 void serialize_char(char c, struct Buffer* buf);
 void deserializeFrame(rtp* frame, struct Buffer* buf);
-void deserialize_int(int* n, struct Buffer* buf);
+void deserialize_uint8(uint8_t* n, struct Buffer* buf);
 void deserialize_char(char* c, struct Buffer* buf);
 
 //sending and receiving frames
@@ -75,8 +75,15 @@ int waitForFrame(int fd, struct timeval* shortTimeout);
 //error generation
 int getFrameErrorPercentage();
 int generateError(int chanceOfFrameError);
-void convToBinary(char* data);
-void checkCrc(struct Buffer* buffer);
+
+//CRC
+#define CRCPOLY 0xD5 //CRC-8
+uint8_t crcTable[256]; //global declaration
+void initCrc();
+uint8_t getCrc(uint8_t *buffer);
+void setCrc(uint8_t *buffer);
+bool checkCrc(uint8_t *buffer);
+
 
 
 #endif //PROTOCOL_STD_H

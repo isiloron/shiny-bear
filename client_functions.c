@@ -103,7 +103,7 @@ void* inputThreadFunction(void *arg)
         messageString[MAXMSG-2] = '\n';
         messageString[MAXMSG-1] = '\0';
         if(strlen(messageString)+1 == MAXMSG)
-            while(ch=getchar()!='\n' && ch!=EOF);
+            while((ch=getchar())!='\n' && ch!=EOF);
         printf("Number of chars to send: %d\n",(int)strlen(messageString)+1);
         if(strncmp(messageString,"FIN\n",MAXMSG)==0)
         {

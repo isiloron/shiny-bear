@@ -22,6 +22,8 @@ int main(int argc, char **argv)
     int chanceOfFrameError = 0;
     rtp* frame = NULL;
 
+    initCrc();
+
     chanceOfFrameError = getFrameErrorPercentage();
 
     while(1)/*for now press Ctr + 'c' to exit program*/

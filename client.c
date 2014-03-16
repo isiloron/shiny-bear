@@ -49,6 +49,8 @@ int main(int argc, char *argv[])
             errorChance = 100;
     }
 
+    initCrc();
+
     prepareHostAddr(&servAddr, hostName, PORT);
 
     int state = CLOSED;
