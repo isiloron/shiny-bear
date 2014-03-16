@@ -16,7 +16,7 @@
 #include <stdbool.h>
 
 //Socket
-#define PORT 5556
+#define PORT 5555
 
 //Message
 #define MAXMSG 255 // 255 character message with a \0 character at the end
