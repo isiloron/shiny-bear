@@ -1,3 +1,10 @@
+/*
+Datacommunication Spring 2014
+Lab 3 - Reliable Transportation Protocol
+Students: sdn08003
+          lja08001
+*/
+
 #include "protocol_std.h"
 
 void prepareSocket(int* sock_fd, struct sockaddr_in* sockaddr)
@@ -168,7 +175,7 @@ int waitForFrame(int fd, struct timeval* shortTimeout)
     return returnval;
 }
 
-int getFrameErrorPercentage()
+int getFrameErrorPercentage()/*read the user input that will become the errorpercentage*/
 {
     char buffer[10];
     int percentage;
@@ -187,7 +194,7 @@ int getFrameErrorPercentage()
     return percentage;
 }
 
-int generateError(int chanceOfFrameError)
+int generateError(int chanceOfFrameError)/*errorgenerator*/
 {
     int error = (rand() % 101); // error percentage from 0% to 100 %
 
@@ -252,4 +259,3 @@ bool checkCrc(uint8_t *buffer)
     else
         return false;
 }
-

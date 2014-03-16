@@ -1,3 +1,10 @@
+/*
+Datacommunication Spring 2014
+Lab 3 - Reliable Transportation Protocol
+Students: sdn08003
+          lja08001
+*/
+
 #ifndef PROTOCOL_STD_H
 #define PROTOCOL_STD_H
 
@@ -84,7 +91,5 @@ void initCrc();
 uint8_t getCrc(uint8_t *buffer);
 void setCrc(uint8_t *buffer);
 bool checkCrc(uint8_t *buffer);
-
-
 
 #endif //PROTOCOL_STD_H
