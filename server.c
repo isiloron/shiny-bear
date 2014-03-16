@@ -70,8 +70,8 @@ int main(int argc, char **argv)
                             printf("SYN received \n");
                             free(frame);
                             frame = newFrame(SYN+ACK, 0, 0);//create a SYN+ACK
+                            printf("Sending SYN+ACK \n");
                             sendFrame(fd, frame, remaddr, chanceOfFrameError);
-                            printf("SYN+ACK sent  \n");
                             state = SYN_RECEIVED;
                             free(frame);
                             break;
@@ -107,8 +107,8 @@ int main(int argc, char **argv)
                     {
                         /*resend syn+ack*/
                         frame = newFrame(SYN+ACK, 0, 0);//create a SYN+ACK frame
+                        printf("Resending SYN+ACK \n");
                         sendFrame(fd, frame, remaddr, chanceOfFrameError);
-                        printf("SYN+ACK resent \n");
                         free(frame);
                     }/*short timeout, no request to connect received*/
                     else/*we got something to read*/
@@ -128,8 +128,9 @@ int main(int argc, char **argv)
                         {
                             printf("SYN received \n");
                             frame = newFrame(SYN+ACK, 0, 0);//create a SYN+ACK frame
+                            printf("Resending SYN+ACK \n");
                             sendFrame(fd, frame, remaddr, chanceOfFrameError); /*resend SYN+ACK*/
-                            printf("SYN+ACK resent \n");
+
                             free(frame);
                         }
                         /*unexpected frame received*/
@@ -185,8 +186,8 @@ int main(int argc, char **argv)
                             frameCountdown = (unsigned char)frame->data;
                             free(frame);
                             frame = newFrame(ACK, expectedSeqence, 0);//create ACK
+                            printf("Sending ACK on seq: %d \n", expectedSeqence);
                             sendFrame(fd, frame, remaddr, chanceOfFrameError);
-                            printf("ACK sent on seq: %d \n", expectedSeqence);
                             free(frame);
                             expectedSeqence = ((expectedSeqence + 1) % MAXSEQ);/*update window*/
                         }
@@ -201,8 +202,8 @@ int main(int argc, char **argv)
                             frameCountdown--;
                             free(frame);
                             frame = newFrame(ACK, expectedSeqence, 0);//create ACK
+                            printf("Sending ACK on seq: %d \n", expectedSeqence);
                             sendFrame(fd, frame, remaddr, chanceOfFrameError);
-                            printf("ACK sent on seq: %d \n", expectedSeqence);
                             expectedSeqence = ((expectedSeqence + 1) % MAXSEQ);
                             free(frame);
                         }
@@ -246,8 +247,8 @@ int main(int argc, char **argv)
                                 //Frame is outside window. Send ACK on corresponding sequence*/
                                 printf("Received frame outside window! Seq: %d\n",frame->seq);
                                 rtp* tempframe = newFrame(ACK, frame->seq, 0);//create ACK
+                                printf("Sending ACK seq: %d \n", tempframe->seq);
                                 sendFrame(fd, tempframe, remaddr, chanceOfFrameError);
-                                printf("ACK sent seq: %d \n", tempframe->seq);
                                 free(tempframe);
                             }
 
