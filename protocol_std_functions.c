@@ -91,7 +91,8 @@ int sendFrame(int socket, rtp* frame, struct sockaddr_in dest, int chanceOfFrame
 
     if(generateError(chanceOfFrameError) == 1)/*frame dissapear*/
     {
-        printf("Frame dissapear! \n");
+        printf(" \n");
+        printf("FRAME DISSAPEARED!!! \n\n");
         return BUFFERSIZE;
     }
 /*    else if(generateError(chanceOfFrameError) == 2) CRC fails

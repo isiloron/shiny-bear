@@ -2,7 +2,7 @@
 
 int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* sourceAddr, int chanceOfFrameError)
 {
-    printf("Teardownsequence initiated. \n");
+    printf("Teardownsequence initiated. \n\n");
     /*TODO Application close*/
 
     rtp* receivedFrame = NULL;
@@ -51,7 +51,7 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
                         }
                         else /*received unexpected packet*/
                         {
-                            printf("Unexpected packet received: Throw away! \n");
+                            printf("Unexpected packet received. seq: %d. Throw away. \n", receivedFrame->seq);
                             free(receivedFrame);
                         }
                     }
@@ -102,7 +102,7 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
                         }
                         else /*received unexpected packet*/
                         {
-                            printf("Unexpected packet received: throw away! \n");
+                            printf("Unexpected packet received. seq: %d. Throw away. \n", receivedFrame->seq);
                             free(receivedFrame);
                         }
                     }
