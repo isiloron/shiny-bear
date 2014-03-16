@@ -1,5 +1,5 @@
 /*
-Datacommunication Spring 2014
+Data communication Spring 2014
 Lab 3 - Reliable Transportation Protocol
 Students: sdn08003
           lja08001
