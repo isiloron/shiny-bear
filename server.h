@@ -3,8 +3,7 @@
 
 #include "protocol_std.h"
 
-
-/*states on server*/
+/*server states*/
 #define CLOSED 1
 #define LISTEN 2
 #define SYN_RECEIVED 3
@@ -17,7 +16,8 @@
 #define AWAIT_CLOSE 9
 #define AWAIT_ACK 10
 
+/*returnval: next state
+function: tears down connection*/
 int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* sourceAddr, int chanceOfFrameError);
-
 
 #endif //SERVER_H
