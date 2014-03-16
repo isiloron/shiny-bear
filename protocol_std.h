@@ -54,9 +54,9 @@ typedef struct rtp_struct
 
 struct Buffer
 {
-    void* data;
-    int next;
-    size_t size;
+    void* data; //the actual data of the buffer
+    int next; //number of bytes to the next chunk of memory to read or write
+    size_t size; //the size of the buffer, in this program is will always be equal to BUFFERSIZE
 };
 
 //Socket functions

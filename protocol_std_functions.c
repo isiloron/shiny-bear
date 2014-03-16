@@ -7,9 +7,10 @@ Students: sdn08003
 
 #include "protocol_std.h"
 
-/*prepare and bind socket to a port*/
+
 void prepareSocket(int* sock_fd, struct sockaddr_in* sockaddr)
 {
+    /*prepare and bind socket to a port*/
     if((*sock_fd=socket(AF_INET, SOCK_DGRAM, 0))<0)
     {
         perror("Could not create socket.");
@@ -29,9 +30,10 @@ void prepareSocket(int* sock_fd, struct sockaddr_in* sockaddr)
     printf("Socket prepared \n");
 }
 
-/*create new empty frame*/
+
 rtp* newFrame(int flags, int seq, char data)
 {
+    /*create new empty frame*/
     rtp* frame = malloc(sizeof(rtp));
     if(frame==NULL)
     {
@@ -46,9 +48,10 @@ rtp* newFrame(int flags, int seq, char data)
     return frame;
 }
 
-/*create new help buffer for serializing*/
+
 struct Buffer* newBuffer()
 {
+    /*create new buffer for serializing*/
     struct Buffer* buf = malloc(sizeof(struct Buffer));
 
     buf->data = malloc(BUFFERSIZE);
@@ -68,13 +71,17 @@ void serializeFrame(rtp* frame, struct Buffer* buf)
 
 void serialize_uint8(uint8_t n, struct Buffer* buf)
 {
+    /*the integer n is copied to the subsequent empty memory on the buffer*/
     memcpy( ((char *)buf->data)+(buf->next), &n, sizeof(uint8_t));
+    //next empty memory is updated
     buf->next += sizeof(uint8_t);
 }
 
 void serialize_char(char c, struct Buffer* buf)
 {
+    /*the char c is copied to the subsequent empty memory on the buffer*/
     memcpy(((char*)buf->data)+(buf->next),&c, sizeof(char));
+    //next empty memory is updated
     buf->next += sizeof(char);
 }
 
@@ -87,26 +94,31 @@ void deserializeFrame(rtp* frame, struct Buffer* buf)
 
 void deserialize_uint8(uint8_t* n, struct Buffer* buf)
 {
+    //memory from buffer is copied to an integer
+    //this is basically the reverse of the serializing function
     memcpy(n,((char*)buf->data)+(buf->next), sizeof(uint8_t));
     buf->next += sizeof(uint8_t);
 }
 
 void deserialize_char(char* c, struct Buffer* buf)
 {
+    //memory from buffer is copied to a char
+    //this is basically the reverse of the serializing function
     memcpy(c,((char*)buf->data)+(buf->next), sizeof(char));
     buf->next += sizeof(char);
 }
 
 int sendFrame(int socket, rtp* frame, struct sockaddr_in dest, int chanceOfFrameError)
 {
+    /*This function takes a frame struct, transfers it to a buffer and sends
+     *it over UDP, returns the number of bytes sent*/
     int error = generateError(chanceOfFrameError);
     int scramble;
     int byte;
 
     if(error == 1)/*frame dissapear*/
     {
-        printf("\n");
-        printf("Frame dissapeared! \n\n");
+        printf("\nFrame dissapeared!\n\n");
         return BUFFERSIZE;
     }
     else
@@ -115,15 +127,14 @@ int sendFrame(int socket, rtp* frame, struct sockaddr_in dest, int chanceOfFrame
         int bytesSent = 0;
         serializeFrame(frame, buffer);
         setCrc(buffer->data);
-        if(error == 2)
+        if(error == 2)//bit corruption
         {
-            printf("\n");
-            printf("Bit error occured!\n\n");
+            printf("\nBit error occured!\n\n");
             uint8_t *tempBuf = (uint8_t*)buffer->data;
             scramble = rand();
             for(byte=0;byte<BUFFERSIZE;byte++)
             {
-                tempBuf[byte] = tempBuf[byte]^( scramble >> (8*(3-byte) ) );
+                tempBuf[byte] = tempBuf[byte]^( scramble >> (8*(3-byte) ) ); //each byte in the buffer is XORed with each byte in "scramble"
             }
         }
         bytesSent = sendto(socket, buffer->data, buffer->size, 0, (struct sockaddr*)&dest, sizeof(dest));
@@ -134,6 +145,7 @@ int sendFrame(int socket, rtp* frame, struct sockaddr_in dest, int chanceOfFrame
 
 rtp* receiveFrame(int socket, struct sockaddr_in* sourceAddr)
 {
+    /*This function receives a UDP packet and translates it to a frame*/
     rtp* frame = NULL;/*framepointer*/
     struct Buffer* buffer;/*help struct for serializing and deserializing*/
     socklen_t addrLen = sizeof(*sourceAddr);
@@ -141,14 +153,13 @@ rtp* receiveFrame(int socket, struct sockaddr_in* sourceAddr)
     recvfrom(socket, buffer->data, buffer->size, 0, (struct sockaddr*)sourceAddr, &addrLen);/*received serialized segment*/
     frame = newFrame(0, 0, 0);/*create empty frame*/
 
-    if(checkCrc(buffer->data))
+    if(checkCrc(buffer->data))//if the CRC checks through
     {
         deserializeFrame(frame, buffer);/*Deserialize the received segment stored in buffer into the created frame*/
     }
     else
     {
-        printf("\n");
-        printf("Bit error detected!\n\n");
+        printf("\nBit error detected!\n\n");
     }
 
     free(buffer);
@@ -157,12 +168,14 @@ rtp* receiveFrame(int socket, struct sockaddr_in* sourceAddr)
 
 void resetShortTimeout(struct timeval* shortTimeout)
 {
+    //this function resets the short timeout
     shortTimeout->tv_sec = 0;
     shortTimeout->tv_usec = 200000; /*200 millisec*/
 }
 
 int waitForFrame(int fd, struct timeval* shortTimeout)
 {
+    /*this function waits for a new packet to arrive on the socket*/
     fd_set read_fd_set;
     int returnval;
 
@@ -200,9 +213,11 @@ int getFrameErrorPercentage()/*read the user input that will become the errorper
 
 int generateError(int chanceOfFrameError)/*errorgenerator*/
 {
-    int error = (rand() % 101); // error percentage from 0% to 100 %
+    /*this function randomly chooses if an error occurs.
+    it returns 0 for no error, 1 for a packet loss, and 2 for bit corruption*/
+    int error = (rand() % 100)+1; // error percentage from 1% to 100 %
 
-    if(error < chanceOfFrameError)/*frame will get error*/
+    if(error <= chanceOfFrameError)/*frame will get error*/
     {
         return (rand() % 2)+1; // randomizes value between 1 and 2
     }
@@ -216,12 +231,14 @@ int generateError(int chanceOfFrameError)/*errorgenerator*/
 #define TOPBIT 128 //binary 10000000
 void initCrc()
 {
+    /*this function generates a table of all possible remainders when the numerator
+    is a byte and the denominator is CRCPOLY. this table is used to quickly calculate the CRC value.*/
     uint8_t remainder;
-    int nominator;
+    int numerator;
     uint8_t bit;
-    for (nominator=0; nominator<256; nominator++)
+    for (numerator=0; numerator<256; numerator++)
     {
-        remainder = nominator;
+        remainder = numerator;
         for(bit=8; bit>0 ; bit--)
         {
             if(remainder & TOPBIT)
@@ -233,12 +250,13 @@ void initCrc()
                 remainder = (remainder << 1);
             }
         }
-        crcTable[nominator] = remainder;
+        crcTable[numerator] = remainder;
     }
 }
 
 uint8_t getCrc(uint8_t *buffer)
 {
+    /*this function calculates the crc value*/
     uint8_t data;
     uint8_t remainder=0;
     int byte;
@@ -252,13 +270,15 @@ uint8_t getCrc(uint8_t *buffer)
 
 void setCrc(uint8_t *buffer)
 {
+    /*This function calulates the crc value and copies it to the end of the buffer*/
     buffer[BUFFERSIZE-1] = getCrc(buffer);
 }
 
 bool checkCrc(uint8_t *buffer)
 {
+    /*this function calculates the crc value and ads a step to calculate the remainder of the whole buffer*/
     uint8_t remainder = getCrc(buffer);
-    if(crcTable[buffer[BUFFERSIZE-1]^remainder] == 0)
+    if(crcTable[buffer[BUFFERSIZE-1]^remainder] == 0) //the remainder is zero, the buffer is error free
         return true;
     else
         return false;
