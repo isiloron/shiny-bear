@@ -7,6 +7,7 @@ Students: sdn08003
 
 #include "protocol_std.h"
 
+/*prepare and bind socket to a port*/
 void prepareSocket(int* sock_fd, struct sockaddr_in* sockaddr)
 {
     if((*sock_fd=socket(AF_INET, SOCK_DGRAM, 0))<0)
@@ -28,6 +29,7 @@ void prepareSocket(int* sock_fd, struct sockaddr_in* sockaddr)
     printf("Socket prepared \n");
 }
 
+/*create new empty frame*/
 rtp* newFrame(int flags, int seq, char data)
 {
     rtp* frame = malloc(sizeof(rtp));

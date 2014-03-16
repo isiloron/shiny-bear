@@ -44,7 +44,6 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
 
                         applicationCloseDelay --;
                     }
-
                     else //frame to read
                     {
                         receivedFrame = receiveFrame(fd, sourceAddr);
@@ -116,7 +115,6 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
                         }
                     }
                 }/*End of for-loop*/
-
                 if(state==CLOSED)
                 {
                     printf("Socket closed successfully \n");
