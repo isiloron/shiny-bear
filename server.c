@@ -72,10 +72,10 @@ int main(int argc, char **argv)
                         {
                             printf("SYN received \n");
                             free(frame);
-                            frame = newFrame(SYN+ACK, 0, 0);//create a SYN+ACK frame
+                            frame = newFrame(SYN+ACK, 0, 0);//create a SYN+ACK
                             sendFrame(fd, frame, remaddr, chanceOfFrameError);
                             printf("SYN+ACK sent  \n");
-                            state = SYN_RECEIVED;/*Move to next state*/
+                            state = SYN_RECEIVED;
                             free(frame);
                             break;
                         }/*End of expected frame received*/

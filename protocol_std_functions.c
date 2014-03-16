@@ -102,7 +102,8 @@ int sendFrame(int socket, rtp* frame, struct sockaddr_in dest, int chanceOfFrame
 
     if(error == 1)/*frame dissapear*/
     {
-        printf("Frame dissapeared! \n");
+        printf("\n");
+        printf("Frame dissapeared! \n\n");
         return BUFFERSIZE;
     }
     else
@@ -113,7 +114,8 @@ int sendFrame(int socket, rtp* frame, struct sockaddr_in dest, int chanceOfFrame
         setCrc(buffer->data);
         if(error == 2)
         {
-            printf("Bit error!\n");
+            printf("\n");
+            printf("Bit error occured!\n\n");
             uint8_t *tempBuf = (uint8_t*)buffer->data;
             scramble = rand();
             for(byte=0;byte<BUFFERSIZE;byte++)
@@ -143,7 +145,8 @@ rtp* receiveFrame(int socket, struct sockaddr_in* sourceAddr)
     }
     else
     {
-        printf("Bit error detected!\n");
+        printf("\n");
+        printf("Bit error detected!\n\n");
     }
 
     free(buffer);
