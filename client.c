@@ -12,19 +12,19 @@
 
 int main(int argc, char *argv[])
 {
-    srand(time(0));
+    srand(time(0));//random seed
+    int sfd; //socket file descriptor
+    struct sockaddr_in myAddr; //local address
+    struct sockaddr_in servAddr; //server address
+    rtp* frameToSend; //pointer to frame to send
+    rtp* recFrame; //pointer to received frame
+    char hostName[hostNameLength]; //string with host name
+    struct timeval shortTimeout; //short timeout
+    int numOfShortTimeouts = 0;//timeout counter
+    int errorChance = 0; //error percentage number
+    bool disconnect = false; //bool indicating disconnection
 
-    int sfd;
-    struct sockaddr_in myAddr;
-    struct sockaddr_in servAddr;
-    rtp* frameToSend;
-    rtp* receivedFrame;
-    char hostName[hostNameLength];
-    struct timeval shortTimeout;
-    int numOfShortTimeouts = 0;
-    int errorChance = 0;
-    bool disconnect = false;
-
+    //handling arguments to client
     if(argv[1] == NULL)
     {
         perror("Usage: client [host name] [error percentage]");
@@ -50,16 +50,19 @@ int main(int argc, char *argv[])
             errorChance = 100;
     }
 
+    //initiating CRC table
     initCrc();
 
+    //preparing address to server
     prepareHostAddr(&servAddr, hostName, PORT);
 
+    //state machine
     int state = CLOSED;
     while(1)
     {
         switch(state)
         {
-            case CLOSED:
+            case CLOSED: //closed state, prepares socket and sends a syn to the server
                 printf("Entered CLOSED state!\n");
                 prepareSocket(&sfd, &myAddr);
                 frameToSend = newFrame(SYN,0,0);
@@ -69,12 +72,12 @@ int main(int argc, char *argv[])
                 state = SYN_SENT;
                 break;
 
-            case SYN_SENT:
+            case SYN_SENT: //syn sent state, waits for syn ack
                 printf("Entered SYN_SENT state!\n");
-                for(numOfShortTimeouts=0; numOfShortTimeouts<longTimeOut; numOfShortTimeouts++)
+                for(numOfShortTimeouts=0; numOfShortTimeouts<longTimeOut; numOfShortTimeouts++) //long timeout counter
                 {
                     resetShortTimeout(&shortTimeout);
-                    if(waitForFrame(sfd, &shortTimeout) == 0) // short timeout
+                    if(waitForFrame(sfd, &shortTimeout) == 0) // short timeout, resend syn
                     {
                         frameToSend = newFrame(SYN,0,0);
                         sendFrame(sfd, frameToSend, servAddr, errorChance);
@@ -83,67 +86,78 @@ int main(int argc, char *argv[])
                     }
                     else //frame to read
                     {
-                        receivedFrame = receiveFrame(sfd, &servAddr);
-                        if(receivedFrame->flags == SYN+ACK)
+                        recFrame = receiveFrame(sfd, &servAddr);
+                        if(recFrame->flags == SYN+ACK) //received frame is a syn+ack
                         {
                             printf("SYN+ACK received!\n");
                             printf("Sending ACK!\n");
                             frameToSend = newFrame(ACK,0,0);
                             sendFrame(sfd, frameToSend, servAddr, errorChance);
                             free(frameToSend);
-                            free(receivedFrame);
+                            free(recFrame);
                             state = PRECAUTION;
-                            break;
+                            break; //break for loop
                         }
-                        free(receivedFrame);
+                        else
+                        {
+                            printf("Unexpected packet received! \n");
+                            free(recFrame);
+                        }
+
                     }
                 }
-                if(state==PRECAUTION)
+                if(state!=PRECAUTION) //if state has not changed, long time out!
                 {
-                    break;
+                    printf("Long timeout! State CLOSED.\n");
+                    close(sfd);
+                    state = CLOSED;
+                    disconnect = true;
                 }
-                printf("Long timeout! State CLOSED.\n");
-                close(sfd);
-                state = CLOSED;
                 break;
 
-            case PRECAUTION:
+
+            case PRECAUTION: //precaution state, waits a second to make sure the ack has arrived
                 printf("Entered PRECAUTION state!\n");
                 for(numOfShortTimeouts=0; numOfShortTimeouts<longTimeOut; numOfShortTimeouts++)
                 {
-                    shortTimeout.tv_sec = 1;
+                    shortTimeout.tv_sec = 1; //setting short timeout to one second
                     shortTimeout.tv_usec = 0;
-                    if(waitForFrame(sfd,&shortTimeout) == 0)
+                    if(waitForFrame(sfd,&shortTimeout) == 0) //short timeout, change state to established
                     {
                         state = ESTABLISHED;
                         break;
                     }
                     else
                     {
-                        receivedFrame = receiveFrame(sfd, &servAddr);
-                        if(receivedFrame->flags == SYN+ACK)
+                        recFrame = receiveFrame(sfd, &servAddr);
+                        if(recFrame->flags == SYN+ACK) //syn+ack recieved again, resend ack
                         {
                             printf("SYN+ACK received!\n");
                             frameToSend = newFrame(ACK,0,0);
                             sendFrame(sfd, frameToSend, servAddr, errorChance);
                             free(frameToSend);
+                            free(recFrame);
                             printf("Resent ACK.\n");
                         }
-                        free(receivedFrame);
+                        else
+                        {
+                            printf("Unexpected packet received!\n");
+                            free(recFrame);
+                        }
                     }
                 }
-                if(state==ESTABLISHED)
+                if(state!=ESTABLISHED) //if state has not changed, long time out!
                 {
-                    break;
+                    printf("Long timeout! State CLOSED.\n");
+                    close(sfd);
+                    state = CLOSED;
+                    disconnect = true;
                 }
-                printf("Long timeout! State CLOSED.\n");
-                close(sfd);
-                state = CLOSED;
                 break;
 
-            case ESTABLISHED:
+            case ESTABLISHED: //established state, ready to send data
                 printf("Entered ESTABLISHED state!\n");
-                if(clientSlidingWindow(sfd, &servAddr, errorChance) == 0)
+                if(clientSlidingWindow(sfd, &servAddr, errorChance) == 0) // if sliding window returns 0, start teardown
                 {
                     frameToSend = newFrame(FIN,0,0);
                     sendFrame(sfd, frameToSend, servAddr, errorChance);
@@ -155,10 +169,11 @@ int main(int argc, char *argv[])
                     printf("Long timeout! State CLOSED.\n");
                     close(sfd);
                     state = CLOSED;
+                    disconnect = true;
                 }
                 break;
 
-            case FIN_SENT:
+            case FIN_SENT: //fin sent state, waiting for ack
                 printf("FIN sent!\n");
                 for(numOfShortTimeouts=0; numOfShortTimeouts<longTimeOut; numOfShortTimeouts++)
                 {
@@ -166,39 +181,39 @@ int main(int argc, char *argv[])
 
                     if(waitForFrame(sfd, &shortTimeout) == 0) // short timeout, Resend FIN
                     {
-                        frameToSend = newFrame(FIN,0,0);//recreate a FIN frame
-                        sendFrame(sfd, frameToSend, servAddr, errorChance); /*resend FIN*/
+                        frameToSend = newFrame(FIN,0,0);
+                        sendFrame(sfd, frameToSend, servAddr, errorChance);
                         printf("FIN resent!\n");
                         free(frameToSend);
                     }
                     else //frame to read
                     {
-                        receivedFrame = receiveFrame(sfd, &servAddr);
+                        recFrame = receiveFrame(sfd, &servAddr);
 
-                        if(receivedFrame->flags == ACK)/*received expected packet ACK*/
+                        if(recFrame->flags == ACK)/*received ACK*/
                         {
                             printf("ACK received!\n");
                             state = AWAIT_FIN;
+                            free(recFrame);
                             break;
                         }
                         else /*received unexpected packet*/
                         {
                             printf("Unexpected packet received! \n");
-                            free(receivedFrame);
-                            break;
+                            free(recFrame);
                         }
                     }
                 }/*End of for-loop*/
-                if(state==AWAIT_FIN)
+                if(state!=AWAIT_FIN)
                 {
-                    break;
+                    printf("Long timeout! Closing socket.\n");
+                    close(sfd);
+                    state = CLOSED;
+                    disconnect = true;
                 }
-                printf("Long timeout! Closing socket.\n");
-                close(sfd);
-                state = CLOSED;
                 break;
 
-            case AWAIT_FIN:
+            case AWAIT_FIN: //await fin state, send ack when fin is received
                 for(numOfShortTimeouts=0; numOfShortTimeouts<longTimeOut; numOfShortTimeouts++)
                 {
                     resetShortTimeout(&shortTimeout);
@@ -206,37 +221,36 @@ int main(int argc, char *argv[])
                     if(waitForFrame(sfd, &shortTimeout) == 0) {} // short timeout, do nothing
                     else //frame to read
                     {
-                        receivedFrame = receiveFrame(sfd, &servAddr);
+                        recFrame = receiveFrame(sfd, &servAddr);
 
-                        if(receivedFrame->flags == FIN)/*received expected packet FIN*/
+                        if(recFrame->flags == FIN)/*received FIN*/
                         {
                             printf("FIN received!\n");
-                            frameToSend = newFrame(ACK,0,0);//recreate a FIN frame
-                            sendFrame(sfd, frameToSend, servAddr, errorChance); /*resend FIN*/
+                            frameToSend = newFrame(ACK,0,0);
+                            sendFrame(sfd, frameToSend, servAddr, errorChance);
                             printf("ACK sent!\n");
                             free(frameToSend);
                             state = SHORT_WAIT;
-                            free(receivedFrame);
+                            free(recFrame);
                             break;
                         }
-                        else /*received unexpected packet*/
+                        else /*received unexpected frame*/
                         {
                             printf("Unexpected packet received! \n");
-                            free(receivedFrame);
-                            break;
+                            free(recFrame);
                         }
                     }
                 }/*End of for-loop*/
-                if(state==SHORT_WAIT)
+                if(state!=SHORT_WAIT)
                 {
-                    break;
+                    printf("Long timeout! Closing socket.\n");
+                    close(sfd);
+                    state = CLOSED;
+                    disconnect = true;
                 }
-                printf("Long timeout! Closing socket.\n");
-                close(sfd);
-                state = CLOSED;
                 break;
 
-            case SHORT_WAIT:
+            case SHORT_WAIT: //short wait state, close socket after a short wait
                 usleep(200000);
                 close(sfd);
                 state = CLOSED;
@@ -244,12 +258,12 @@ int main(int argc, char *argv[])
                 disconnect = true;
                 break;
 
-            default:
+            default: // default state if catches state change errors
                 perror("Undefined state.");
                 exit(EXIT_FAILURE);
                 break;
         }
-        if(disconnect)
+        if(disconnect)//when disconnect is true, wait for keyboard input before reconnecting
         {
             printf("Press any key to reconnect.\n");
             getchar();
