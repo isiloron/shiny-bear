@@ -81,7 +81,6 @@ void resetShortTimeout(struct timeval* shortTimeout);
 int waitForFrame(int fd, struct timeval* shortTimeout);
 
 //error generation
-int getFrameErrorPercentage();
 int generateError(int chanceOfFrameError);
 
 //CRC
