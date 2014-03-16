@@ -147,7 +147,7 @@ void* inputThreadFunction(void *arg)
                     if(window->endSeq-window->startSeq == WINDSIZE || window->endSeq-window->startSeq == -WINDSIZE)
                         resendFrames(window);
                 }
-                printf("Sending frame, seq:%d ... ",window->endSeq);
+                printf("Sending frame, seq:%d\n",window->endSeq);
 
                 if(window->frameSeq[window->endSeq] != NULL)
                     free(window->frameSeq[window->endSeq]); //frees the next frame in sequence if not NULL
@@ -155,7 +155,6 @@ void* inputThreadFunction(void *arg)
                 window->frameSeq[window->endSeq] = newFrame(ACK,window->endSeq,messageString[i]);
                 sendFrame(window->sfd, window->frameSeq[window->endSeq], window->servAddr, window->errorChance);
                 window->endSeq=(window->endSeq+1)%MAXSEQ;
-                printf("frame sent!\n");
             }
             //while the window is not empty after sending all the chars
             while(window->endSeq-window->startSeq != 0)
@@ -165,6 +164,7 @@ void* inputThreadFunction(void *arg)
                 if(window->endSeq-window->startSeq != 0)
                     resendFrames(window);
             }
+            printf("Message transfer successful!\n");
         }
     }
 }
