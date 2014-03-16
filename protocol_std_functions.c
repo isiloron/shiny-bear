@@ -46,6 +46,7 @@ rtp* newFrame(int flags, int seq, char data)
     return frame;
 }
 
+/*create new help buffer for serializing*/
 struct Buffer* newBuffer()
 {
     struct Buffer* buf = malloc(sizeof(struct Buffer));
@@ -124,7 +125,6 @@ int sendFrame(int socket, rtp* frame, struct sockaddr_in dest, int chanceOfFrame
             {
                 tempBuf[byte] = tempBuf[byte]^( scramble >> (8*(3-byte) ) );
             }
-
         }
         bytesSent = sendto(socket, buffer->data, buffer->size, 0, (struct sockaddr*)&dest, sizeof(dest));
         free(buffer);
@@ -152,7 +152,6 @@ rtp* receiveFrame(int socket, struct sockaddr_in* sourceAddr)
     }
 
     free(buffer);
-
     return frame;
 }
 

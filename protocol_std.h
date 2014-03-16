@@ -47,7 +47,7 @@ Students: sdn08003
 
 typedef struct rtp_struct
 {
-    uint8_t flags;
+    uint8_t flags; // type of frame
     uint8_t seq; //sequence number (frame number)
     char data; //one character at a time, if flag is INF then the char value is the number of characters in the complete message.
 } rtp;
