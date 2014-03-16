@@ -179,25 +179,6 @@ int waitForFrame(int fd, struct timeval* shortTimeout)
     return returnval;
 }
 
-int getFrameErrorPercentage()/*read the user input that will become the errorpercentage*/
-{
-    char buffer[10];
-    int percentage;
-
-    printf("Enter the probability, in percentage (0-100), that a frame will be currupted/lost: ");
-    fflush(stdin);
-    fgets(buffer, 10, stdin);
-    percentage = atoi(buffer);
-
-    if(percentage < 0)
-        percentage = 0;
-    if(percentage > 100)
-        percentage = 100;
-
-    printf("Errorpercentage %d \n", percentage);
-    return percentage;
-}
-
 int generateError(int chanceOfFrameError)/*errorgenerator*/
 {
     int error = (rand() % 101); // error percentage from 0% to 100 %

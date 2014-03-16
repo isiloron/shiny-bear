@@ -26,5 +26,7 @@ Students: sdn08003
 /*returnval: next state
 function: tears down connection*/
 int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* sourceAddr, int chanceOfFrameError);
+/*read errorpercentage from user*/
+int getFrameErrorPercentage();
 
 #endif //SERVER_H
