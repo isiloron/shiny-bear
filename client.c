@@ -23,6 +23,7 @@ int main(int argc, char *argv[])
     struct timeval shortTimeout;
     int numOfShortTimeouts = 0;
     int errorChance = 0;
+    bool disconnect = false;
 
     if(argv[1] == NULL)
     {
@@ -240,12 +241,19 @@ int main(int argc, char *argv[])
                 close(sfd);
                 state = CLOSED;
                 printf("Connection was torn down!\n");
+                disconnect = true;
                 break;
 
             default:
                 perror("Undefined state.");
                 exit(EXIT_FAILURE);
                 break;
+        }
+        if(disconnect)
+        {
+            printf("Press any key to reconnect.\n");
+            getchar();
+            disconnect = false;
         }
     }
     return 0;
