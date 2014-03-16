@@ -38,8 +38,8 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
 
     /*send ack to confirm teardown start*/
     frameToSend = newFrame(ACK, 0, 0);//create a ACK
+    printf("Sending ACK \n");
     sendFrame(fd, frameToSend, *sourceAddr, chanceOfFrameError);
-    printf("ACK sent \n");
     free(frameToSend);
 
     while(1)
@@ -71,8 +71,8 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
                         {
                             printf("FIN received \n");
                             frameToSend = newFrame(ACK, 0, 0);//create a ACK frame
+                            printf("Sending ACK \n");
                             sendFrame(fd, frameToSend, *sourceAddr, chanceOfFrameError);
-                            printf("ACK resent \n");
                             free(frameToSend);
                         }
                         else /*received unexpected packet*/
@@ -103,8 +103,8 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
                     if(waitForFrame(fd, shortTimeout) == 0) // short timeout, resend fin
                     {
                         frameToSend = newFrame(FIN, 0, 0);//create a FIN
+                        printf("Resending FIN \n");
                         sendFrame(fd, frameToSend, *sourceAddr, chanceOfFrameError);
-                        printf("FIN resent \n");
                         free(frameToSend);
                     }
                     else //frame to read
@@ -115,8 +115,8 @@ int teardownResponse(int fd, struct timeval* shortTimeout, struct sockaddr_in* s
                         {
                             printf("FIN received!\n");
                             frameToSend = newFrame(ACK, 0, 0);//create a ACK
+                            printf("Resending ACK \n");
                             sendFrame(fd, frameToSend, *sourceAddr, chanceOfFrameError);
-                            printf("ACK resent \n");
                             free(frameToSend);
                         }
                         else if(receivedFrame->flags == ACK)/*received ACK*/
