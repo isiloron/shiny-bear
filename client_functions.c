@@ -68,7 +68,7 @@ int clientSlidingWindow(int sfd, struct sockaddr_in* servAddr, int errorChance)
                 }
                 if(i==window.endSeq)
                 {
-                    printf("Unexpected packet received! \n");
+                    printf("Frame outside window received! Seq: %d \n",receivedFrame->seq);
                     free(receivedFrame);
                 }
                 numOfShortTimeouts = 0;
@@ -94,13 +94,17 @@ void* inputThreadFunction(void *arg)
     srand(time(0));
     struct windowStruct *window = (struct windowStruct *)arg;
     char messageString[MAXMSG];
+    char ch;
     while(1)
     {
-        fflush(stdin);
         printf("Message: ");
+        fflush(stdin);
         fgets(messageString,MAXMSG,stdin);
+        messageString[MAXMSG-2] = '\n';
         messageString[MAXMSG-1] = '\0';
-        printf("Number of chars to send: %d\n",(int)strlen(messageString+1));
+        if(strlen(messageString)+1 == MAXMSG)
+            while((ch=getchar())!='\n' && ch!=EOF);
+        printf("Number of chars to send: %d\n",(int)strlen(messageString)+1);
         if(strncmp(messageString,"FIN\n",MAXMSG)==0)
         {
             return NULL;
