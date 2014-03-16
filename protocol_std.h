@@ -1,3 +1,10 @@
+/*
+Data communication Spring 2014
+Lab 3 - Reliable Transportation Protocol
+Students: sdn08003
+          lja08001
+*/
+
 #ifndef PROTOCOL_STD_H
 #define PROTOCOL_STD_H
 
@@ -17,6 +24,7 @@
 
 //Socket
 #define PORT 5555
+
 
 //Message
 #define MAXMSG 255 // 255 character message with a \0 character at the end
@@ -39,7 +47,7 @@
 
 typedef struct rtp_struct
 {
-    uint8_t flags;
+    uint8_t flags; // type of frame
     uint8_t seq; //sequence number (frame number)
     char data; //one character at a time, if flag is INF then the char value is the number of characters in the complete message.
 } rtp;
@@ -83,7 +91,5 @@ void initCrc();
 uint8_t getCrc(uint8_t *buffer);
 void setCrc(uint8_t *buffer);
 bool checkCrc(uint8_t *buffer);
-
-
 
 #endif //PROTOCOL_STD_H

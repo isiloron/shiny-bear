@@ -1,5 +1,13 @@
+/*
+Data communication Spring 2014
+Lab 3 - Reliable Transportation Protocol
+Students: sdn08003
+          lja08001
+*/
+
 #include "protocol_std.h"
 
+/*prepare and bind socket to a port*/
 void prepareSocket(int* sock_fd, struct sockaddr_in* sockaddr)
 {
     if((*sock_fd=socket(AF_INET, SOCK_DGRAM, 0))<0)
@@ -21,6 +29,7 @@ void prepareSocket(int* sock_fd, struct sockaddr_in* sockaddr)
     printf("Socket prepared \n");
 }
 
+/*create new empty frame*/
 rtp* newFrame(int flags, int seq, char data)
 {
     rtp* frame = malloc(sizeof(rtp));
@@ -37,6 +46,7 @@ rtp* newFrame(int flags, int seq, char data)
     return frame;
 }
 
+/*create new help buffer for serializing*/
 struct Buffer* newBuffer()
 {
     struct Buffer* buf = malloc(sizeof(struct Buffer));
@@ -95,7 +105,8 @@ int sendFrame(int socket, rtp* frame, struct sockaddr_in dest, int chanceOfFrame
 
     if(error == 1)/*frame dissapear*/
     {
-        printf("Frame dissapeared! \n");
+        printf("\n");
+        printf("Frame dissapeared! \n\n");
         return BUFFERSIZE;
     }
     else
@@ -106,14 +117,14 @@ int sendFrame(int socket, rtp* frame, struct sockaddr_in dest, int chanceOfFrame
         setCrc(buffer->data);
         if(error == 2)
         {
-            printf("Bit error!\n");
+            printf("\n");
+            printf("Bit error occured!\n\n");
             uint8_t *tempBuf = (uint8_t*)buffer->data;
             scramble = rand();
             for(byte=0;byte<BUFFERSIZE;byte++)
             {
                 tempBuf[byte] = tempBuf[byte]^( scramble >> (8*(3-byte) ) );
             }
-
         }
         bytesSent = sendto(socket, buffer->data, buffer->size, 0, (struct sockaddr*)&dest, sizeof(dest));
         free(buffer);
@@ -136,11 +147,11 @@ rtp* receiveFrame(int socket, struct sockaddr_in* sourceAddr)
     }
     else
     {
-        printf("Bit error detected!\n");
+        printf("\n");
+        printf("Bit error detected!\n\n");
     }
 
     free(buffer);
-
     return frame;
 }
 
@@ -168,7 +179,7 @@ int waitForFrame(int fd, struct timeval* shortTimeout)
     return returnval;
 }
 
-int getFrameErrorPercentage()
+int getFrameErrorPercentage()/*read the user input that will become the errorpercentage*/
 {
     char buffer[10];
     int percentage;
@@ -187,7 +198,7 @@ int getFrameErrorPercentage()
     return percentage;
 }
 
-int generateError(int chanceOfFrameError)
+int generateError(int chanceOfFrameError)/*errorgenerator*/
 {
     int error = (rand() % 101); // error percentage from 0% to 100 %
 
@@ -252,4 +263,3 @@ bool checkCrc(uint8_t *buffer)
     else
         return false;
 }
-
