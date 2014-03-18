@@ -124,7 +124,6 @@ void sendFrame(int socket, rtp* frame, struct sockaddr_in dest, int chanceOfFram
     if(error == 1)/*frame dissapear*/
     {
         printf("\nFrame dissapeared!\n\n");
-        return BUFFERSIZE;
     }
     else
     {
