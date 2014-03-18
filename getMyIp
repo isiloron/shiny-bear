@@ -1,0 +1,3 @@
+#!/bin/bash
+#type ./getMyIp
+ifconfig | grep -e "inet:" -e "addr:" | grep -v "inet6" | grep -v "127\."
