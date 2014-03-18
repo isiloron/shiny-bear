@@ -281,6 +281,12 @@ int main(int argc, char **argv)
                 state = teardownResponse(fd, &shortTimeout, &remaddr, chanceOfFrameError);
                 break;
             }/*End of CASE RESPOND_TEARDOWN*/
+
+            default:
+            {
+                perror("Undefined state!");
+                exit(0);
+            }/*End of undefined state*/
         }/*End of switch*/
     }/*End of while(1)*/
 
