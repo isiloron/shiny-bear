@@ -75,7 +75,7 @@ void deserialize_uint8(uint8_t* n, struct Buffer* buf);
 void deserialize_char(char* c, struct Buffer* buf);
 
 //sending and receiving frames
-int sendFrame(int socket, rtp* frame, struct sockaddr_in dest, int chanceOfFrameError);
+void sendFrame(int socket, rtp* frame, struct sockaddr_in dest, int chanceOfFrameError);
 rtp* receiveFrame(int socket, struct sockaddr_in* sourceAddr);
 void resetShortTimeout(struct timeval* shortTimeout);
 int waitForFrame(int fd, struct timeval* shortTimeout);

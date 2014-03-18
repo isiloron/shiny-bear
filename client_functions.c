@@ -130,10 +130,14 @@ void* inputThreadFunction(void *arg)
             //sending an info frame to the server. this contains the number of chars in the message
             printf("Number of chars to send: %d\n",(int)strlen(messageString)+1);
             printf("Sending INF. seq:%d\n",window->endSeq);
+
             if(window->frameSeq[window->endSeq] != NULL)
                 free(window->frameSeq[window->endSeq]); //frees the next frame in sequence if it is not NULL
+
             window->frameSeq[window->endSeq] = newFrame(INF,window->endSeq,strlen(messageString)+1); //new INF frame
+
             sendFrame(window->sfd, window->frameSeq[window->endSeq], window->servAddr, window->errorChance); //send INF frame
+
             window->endSeq=(window->endSeq+1)%MAXSEQ; //step endseq forward
 
             int i;
@@ -152,6 +156,7 @@ void* inputThreadFunction(void *arg)
                 if(window->frameSeq[window->endSeq] != NULL)
                     free(window->frameSeq[window->endSeq]); //frees the next frame in sequence if not NULL
 
+                //send ack and increase endSeq
                 window->frameSeq[window->endSeq] = newFrame(ACK,window->endSeq,messageString[i]);
                 sendFrame(window->sfd, window->frameSeq[window->endSeq], window->servAddr, window->errorChance);
                 window->endSeq=(window->endSeq+1)%MAXSEQ;

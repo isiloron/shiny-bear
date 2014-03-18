@@ -38,7 +38,7 @@ rtp* newFrame(int flags, int seq, char data)
     if(frame==NULL)
     {
         perror("Failed to create frame \n");
-        return NULL;
+        exit(EXIT_FAILURE);
     }
 
     frame->flags = flags;
@@ -53,6 +53,11 @@ struct Buffer* newBuffer()
 {
     /*create new buffer for serializing*/
     struct Buffer* buf = malloc(sizeof(struct Buffer));
+    if(buf == NULL)
+    {
+        perror("Failed to create buffer!");
+        exit(EXIT_FAILURE);
+    }
 
     buf->data = malloc(BUFFERSIZE);
     buf->data = memset(buf->data,0,sizeof(BUFFERSIZE));
@@ -108,7 +113,7 @@ void deserialize_char(char* c, struct Buffer* buf)
     buf->next += sizeof(char);
 }
 
-int sendFrame(int socket, rtp* frame, struct sockaddr_in dest, int chanceOfFrameError)
+void sendFrame(int socket, rtp* frame, struct sockaddr_in dest, int chanceOfFrameError)
 {
     /*This function takes a frame struct, transfers it to a buffer and sends
      *it over UDP, returns the number of bytes sent*/
@@ -138,8 +143,12 @@ int sendFrame(int socket, rtp* frame, struct sockaddr_in dest, int chanceOfFrame
             }
         }
         bytesSent = sendto(socket, buffer->data, buffer->size, 0, (struct sockaddr*)&dest, sizeof(dest));
+        if(bytesSent == -1)
+        {
+            perror("Failed to send UDP packet!");
+            exit(EXIT_FAILURE);
+        }
         free(buffer);
-        return bytesSent;
     }
 }
 
@@ -150,7 +159,13 @@ rtp* receiveFrame(int socket, struct sockaddr_in* sourceAddr)
     struct Buffer* buffer;/*help struct for serializing and deserializing*/
     socklen_t addrLen = sizeof(*sourceAddr);
     buffer = newBuffer();/*create helpbuffer for deserializing*/
-    recvfrom(socket, buffer->data, buffer->size, 0, (struct sockaddr*)sourceAddr, &addrLen);/*received serialized segment*/
+    int bytesReceived;
+    bytesReceived = recvfrom(socket, buffer->data, buffer->size, 0, (struct sockaddr*)sourceAddr, &addrLen);/*received serialized segment*/
+    if(bytesReceived == -1)
+    {
+        perror("Failed to receive UDP packet!");
+        exit(EXIT_FAILURE);
+    }
     frame = newFrame(0, 0, 0);/*create empty frame*/
 
     if(checkCrc(buffer->data))//if the CRC checks through
@@ -163,6 +178,7 @@ rtp* receiveFrame(int socket, struct sockaddr_in* sourceAddr)
     }
 
     free(buffer);
+
     return frame;
 }
 
