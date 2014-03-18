@@ -211,6 +211,12 @@ int generateError(int chanceOfFrameError)/*errorgenerator*/
 {
     /*this function randomly chooses if an error occurs.
     it returns 0 for no error, 1 for a packet loss, and 2 for bit corruption*/
+
+    if(chanceOfFrameError == 0)
+    {
+        return 0;
+    }
+
     int error = (rand() % 100)+1; // error percentage from 1% to 100 %
 
     if(error <= chanceOfFrameError)/*frame will get error*/
