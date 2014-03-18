@@ -85,6 +85,7 @@ int generateError(int chanceOfFrameError);
 
 //CRC
 #define CRCPOLY 0xD5 //CRC-8
+#define TOPBIT 128 //binary 10000000
 uint8_t crcTable[256]; //global declaration
 void initCrc();
 uint8_t getCrc(uint8_t *buffer);

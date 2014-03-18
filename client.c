@@ -234,8 +234,8 @@ int main(int argc, char *argv[])
                         {
                             printf("FIN received!\n");
                             frameToSend = newFrame(ACK,0,0);
+                            printf("Sending ACK.\n");
                             sendFrame(sfd, frameToSend, servAddr, errorChance);
-                            printf("ACK sent!\n");
                             free(frameToSend);
                             state = SHORT_WAIT;
                             free(recFrame);
@@ -257,8 +257,39 @@ int main(int argc, char *argv[])
                 }
                 break;
 
-            case SHORT_WAIT: //short wait state, close socket after a short wait
-                usleep(200000);
+            case SHORT_WAIT: //short wait state, close socket after a short wait, if a FIN is received resend ACK
+                for(numOfShortTimeouts=0; numOfShortTimeouts<longTimeOut; numOfShortTimeouts++)
+                {
+                    shortTimeout.tv_sec = 1; //setting short timeout to one second
+                    shortTimeout.tv_usec = 0;
+                    if(waitForFrame(sfd,&shortTimeout) == 0) //short timeout, change state to established
+                    {
+                        state = CLOSED;
+                        break;
+                    }
+                    else
+                    {
+                        recFrame = receiveFrame(sfd, &servAddr);
+                        if(recFrame->flags == FIN) //syn+ack recieved again, resend ack
+                        {
+                            printf("FIN received!\n");
+                            frameToSend = newFrame(ACK,0,0);
+                            printf("Resending ACK.\n");
+                            sendFrame(sfd, frameToSend, servAddr, errorChance);
+                            free(frameToSend);
+                            free(recFrame);
+                        }
+                        else
+                        {
+                            printf("Unexpected packet received!\n");
+                            free(recFrame);
+                        }
+                    }
+                }
+                if(state!=CLOSED)
+                {
+                    printf("Long timeout! Closing socket.\n");
+                }
                 close(sfd);
                 state = CLOSED;
                 printf("Connection was torn down!\n");

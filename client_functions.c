@@ -120,7 +120,6 @@ void* inputThreadFunction(void *arg)
         if(strlen(messageString)+1 == MAXMSG)
             while((ch=getchar())!='\n' && ch!=EOF);
 
-        printf("Number of chars to send: %d\n",(int)strlen(messageString)+1);
 
         if(strncmp(messageString,"FIN\n",MAXMSG)==0) //if the word FIN is input the teardown process starts
         {
@@ -129,6 +128,7 @@ void* inputThreadFunction(void *arg)
         else
         {
             //sending an info frame to the server. this contains the number of chars in the message
+            printf("Number of chars to send: %d\n",(int)strlen(messageString)+1);
             printf("Sending INF. seq:%d\n",window->endSeq);
             if(window->frameSeq[window->endSeq] != NULL)
                 free(window->frameSeq[window->endSeq]); //frees the next frame in sequence if it is not NULL
