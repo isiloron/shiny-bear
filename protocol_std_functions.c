@@ -209,7 +209,6 @@ int generateError(int chanceOfFrameError)/*errorgenerator*/
 }
 
 //CRC (code reference: http://www.barrgroup.com/Embedded-Systems/How-To/CRC-Calculation-C-Code)
-#define TOPBIT 128 //binary 10000000
 void initCrc()
 {
     /*this function generates a table of all possible remainders when the numerator
@@ -217,31 +216,31 @@ void initCrc()
     uint8_t remainder;
     int numerator;
     uint8_t bit;
-    for (numerator=0; numerator<256; numerator++)
+    for (numerator=0; numerator<256; numerator++) //loops through all possible bytes
     {
         remainder = numerator;
-        for(bit=8; bit>0 ; bit--)
+        for(bit=8; bit>0 ; bit--) //for each bit in the byte
         {
-            if(remainder & TOPBIT)
+            if(remainder & TOPBIT) //if the first bit is a one
             {
-                remainder = (remainder << 1) ^ CRCPOLY;
+                remainder = (remainder << 1) ^ CRCPOLY; //bitshift to the left then XOR with CRCPOLY
             }
-            else
+            else //if the first bit is a zero
             {
-                remainder = (remainder << 1);
+                remainder = (remainder << 1); //bitshift the zero
             }
         }
-        crcTable[numerator] = remainder;
+        crcTable[numerator] = remainder; //put the calculated remainder in the table
     }
 }
 
 uint8_t getCrc(uint8_t *buffer)
 {
-    /*this function calculates the crc value*/
+    /*this function calculates the crc value of the buffer*/
     uint8_t data;
     uint8_t remainder=0;
     int byte;
-    for(byte=0; byte<(BUFFERSIZE-1); byte++)
+    for(byte=0; byte<(BUFFERSIZE-1); byte++) //bytewize calculation using the generated table
     {
         data = buffer[byte] ^ remainder;
         remainder = crcTable[data];
@@ -251,13 +250,13 @@ uint8_t getCrc(uint8_t *buffer)
 
 void setCrc(uint8_t *buffer)
 {
-    /*This function calulates the crc value and copies it to the end of the buffer*/
+    /*This function calulates the crc value of the buffer and appends it to the buffer*/
     buffer[BUFFERSIZE-1] = getCrc(buffer);
 }
 
 bool checkCrc(uint8_t *buffer)
 {
-    /*this function calculates the crc value and ads a step to calculate the remainder of the whole buffer*/
+    /*this function calculates the crc value with the getCrc function and adds a step to calculate the remainder of the whole buffer*/
     uint8_t remainder = getCrc(buffer);
     if(crcTable[buffer[BUFFERSIZE-1]^remainder] == 0) //the remainder is zero, the buffer is error free
         return true;
